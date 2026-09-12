@@ -23,6 +23,7 @@ export default function InputFlatpickr({
     placeholder,
     mindate,
     maxdate,
+    required,
 }) {
     const errorMessage = errors?.[name];
     const hasError = Boolean(errorMessage);
@@ -63,6 +64,7 @@ export default function InputFlatpickr({
                 value={value}
                 disabled={disabled}
                 placeholder={placeholder}
+                required={required}
                 className="flatpickr-field__input"
                 options={{
                     ...userOptions,

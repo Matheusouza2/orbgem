@@ -24,7 +24,8 @@ class SyncPluggyInvestmentsJob implements ShouldQueue
         }
 
         foreach ($client->getInvestments($connection->external_id) as $remoteInvestment) {
-            $investments->sync($connection, $remoteInvestment);
+            $externalInvestment = $investments->sync($connection, $remoteInvestment);
+            SyncPluggyInvestmentTransactionsJob::dispatch($externalInvestment->id);
         }
     }
 }

@@ -1,10 +1,15 @@
 import { HelperText, Label, TextInput } from "flowbite-react";
 import { Xmark } from "../Icons/solid";
+import InputFlatpickr from "./Flatpickr";
 
 export default function InputValidation({ setData, onChange, errors, maskRef = null, labelLight, className = '', inputClassName = '', color: _color, ...props }) {
 
     const errorMessage = errors?.[props.name];
     const hasError = Boolean(errorMessage);
+
+    if (props.type === 'date') {
+        return <InputFlatpickr name={props.name} label={props.label} value={props.value} setData={setData} errors={errors} disabled={props.disabled} required={props.required} clearable={props.clearable} placeholder={props.placeholder} className={className} />;
+    }
 
     // Modo controlado externamente (ex: TableFilter via onChange)
     const isControlled = typeof onChange === "function";

@@ -8,6 +8,9 @@ const normalizeErrors = (error) => error?.errors ?? { general: error?.message ??
 export default function useInvestments() {
     const [wallets, setWallets] = useState([]);
     const [investments, setInvestments] = useState([]);
+    const [income, setIncome] = useState([]);
+    const [incomeFilters, setIncomeFilters] = useState({ investment_id: '', from: '', to: '' });
+    const [incomeLoading, setIncomeLoading] = useState(false);
     const [selectedWalletId, setSelectedWalletId] = useState('');
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -26,12 +29,25 @@ export default function useInvestments() {
         setInvestments(await FinancialService.listInvestments(walletId));
     };
 
+    const loadIncome = async (walletId, filters = incomeFilters) => {
+        if (!walletId) {
+            setIncome([]);
+            return;
+        }
+        setIncomeLoading(true);
+        try {
+            setIncome(await FinancialService.listInvestmentIncome(walletId, Object.fromEntries(Object.entries(filters).filter(([, value]) => value))));
+        } finally {
+            setIncomeLoading(false);
+        }
+    };
+
     useEffect(() => {
         FinancialService.listWallets().then((availableWallets) => {
             setWallets(availableWallets);
             const firstWalletId = availableWallets[0]?.id ?? '';
             setSelectedWalletId(firstWalletId);
-            return loadInvestments(firstWalletId);
+            return Promise.all([loadInvestments(firstWalletId), loadIncome(firstWalletId)]);
         }).catch((error) => setErrors(normalizeErrors(error))).finally(() => setLoading(false));
     }, []);
 
@@ -39,7 +55,11 @@ export default function useInvestments() {
         setSelectedWalletId(walletId);
         setErrors({});
         loadInvestments(walletId).catch((error) => setErrors(normalizeErrors(error)));
+        loadIncome(walletId).catch((error) => setErrors(normalizeErrors(error)));
     };
+
+    const updateIncomeFilters = (field, value) => setIncomeFilters((current) => ({ ...current, [field]: value }));
+    const applyIncomeFilters = () => loadIncome(selectedWalletId);
 
     const openModal = (investment = null) => {
         setErrors({});
@@ -98,5 +118,5 @@ export default function useInvestments() {
         try { await FinancialService.deleteInvestment(investment.id); setInvestments((current) => current.filter((item) => item.id !== investment.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 
-    return { wallets, investments, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage };
+    return { wallets, investments, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters };
 }

@@ -66,4 +66,20 @@ class PluggyClientTest extends TestCase
             && str_contains($request->url(), 'dateTo=2026-01-31'));
         Http::assertSent(fn ($request): bool => str_contains($request->url(), 'after=cursor-2'));
     }
+
+    public function test_it_fetches_investment_transactions_using_page_pagination(): void
+    {
+        config(['services.pluggy.api_key' => 'test-api-key', 'services.pluggy.client_id' => null, 'services.pluggy.client_secret' => null]);
+        Http::fake([
+            'https://api.pluggy.ai/investments/investment-1/transactions*' => Http::sequence()
+                ->push(['results' => [['id' => 'income-1']], 'totalPages' => 2], 200)
+                ->push(['results' => [['id' => 'income-2']], 'totalPages' => 2], 200),
+        ]);
+
+        $transactions = app(PluggyClient::class)->getInvestmentTransactions('investment-1');
+
+        self::assertSame(['income-1', 'income-2'], array_column($transactions, 'id'));
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'page=1'));
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'page=2'));
+    }
 }

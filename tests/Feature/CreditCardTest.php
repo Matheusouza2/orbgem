@@ -13,6 +13,9 @@ use App\Enums\WalletMemberRole;
 use App\Models\Account;
 use App\Models\CreditCard;
 use App\Models\CreditCardInvoice;
+use App\Models\ExternalAccount;
+use App\Models\ExternalTransaction;
+use App\Models\FinancialConnection;
 use App\Models\Installment;
 use App\Models\Transaction;
 use App\Models\User;
@@ -85,6 +88,36 @@ class CreditCardTest extends TestCase
         $this->assertSame([FinancialInstrumentType::CREDIT_CARD, FinancialInstrumentType::CREDIT_CARD, FinancialInstrumentType::CREDIT_CARD], Transaction::query()->orderBy('id')->pluck('financial_instrument_type')->all());
         $this->assertSame([TransactionStatus::PROJECTED, TransactionStatus::PROJECTED, TransactionStatus::PROJECTED], Transaction::query()->orderBy('id')->pluck('status')->all());
         $this->assertSame([$member->id, $member->id, $member->id], Transaction::query()->orderBy('id')->pluck('created_by_member_id')->all());
+    }
+
+    public function test_card_transactions_include_purchases_and_imported_pluggy_transactions(): void
+    {
+        [$user, $wallet, $member] = $this->walletWithMember(WalletMemberRole::EDITOR);
+        $card = $this->creditCard($wallet);
+        $this->createPurchase($user, $wallet, $card);
+        $connection = FinancialConnection::query()->create(['wallet_id' => $wallet->id, 'provider' => 'pluggy', 'external_id' => 'item-1', 'institution_name' => 'Banco Teste', 'status' => 'UPDATED']);
+        $externalAccount = ExternalAccount::query()->create(['financial_connection_id' => $connection->id, 'external_id' => 'account-1', 'type' => 'CREDIT', 'subtype' => 'CREDIT_CARD', 'accountable_type' => CreditCard::class, 'accountable_id' => $card->id]);
+        $importedTransaction = Transaction::query()->create([
+            'wallet_id' => $wallet->id,
+            'description' => 'Compra importada',
+            'type' => TransactionType::EXPENSE,
+            'effect' => TransactionEffect::NONE,
+            'amount' => 2500,
+            'financial_instrument_type' => FinancialInstrumentType::CREDIT_CARD,
+            'transaction_date' => '2026-09-12',
+            'competence_date' => '2026-09-12',
+            'due_date' => '2026-10-05',
+            'status' => TransactionStatus::POSTED,
+            'created_by_member_id' => $member->id,
+            'updated_by_member_id' => $member->id,
+        ]);
+        ExternalTransaction::query()->create(['external_account_id' => $externalAccount->id, 'transaction_id' => $importedTransaction->id, 'source' => 'pluggy', 'external_id' => 'transaction-1']);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/credit-cards/'.$card->id.'/transactions?wallet_id='.$wallet->id.'&month=2026-09&per_page=10')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonFragment(['description' => 'Compra importada'])
+            ->assertJsonFragment(['description' => 'Compra (1/1)']);
     }
 
     public function test_invoice_can_close_and_mark_its_pending_installments_as_invoiced(): void

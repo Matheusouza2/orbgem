@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/monthly-summary', MonthlySummaryController::class);
     Route::post('/credit-cards', [CreditCardController::class, 'store']);
     Route::get('/credit-cards', [CreditCardController::class, 'index']);
+    Route::get('/credit-cards/{creditCard}/transactions', [CreditCardController::class, 'transactions'])->whereNumber('creditCard');
     Route::put('/credit-cards/{creditCard}', [CreditCardController::class, 'update'])->whereNumber('creditCard');
     Route::delete('/credit-cards/{creditCard}', [CreditCardController::class, 'destroy'])->whereNumber('creditCard');
     Route::post('/credit-card-purchases', [CreditCardPurchaseController::class, 'store']);
@@ -91,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('/open-finance/items/{item}', [OpenFinanceController::class, 'destroy'])->whereNumber('item');
     Route::get('/market/quote', BrapiQuoteController::class);
     Route::apiResource('investments', InvestmentController::class)->except(['show']);
+    Route::get('/investment-income', [InvestmentController::class, 'income']);
     Route::post('/consolidations', [Slice5Controller::class, 'createConsolidation']);
     Route::get('/consolidations', [Slice5Controller::class, 'listConsolidations']);
     Route::put('/consolidations/{consolidation}', [Slice5Controller::class, 'updateConsolidation'])->whereNumber('consolidation');

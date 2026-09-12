@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\DTO\CreditCardDTO;
+use App\DTO\CreditCardTransactionListDTO;
 use App\Models\CreditCard;
 use App\Repositories\CreditCardRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class CreditCardService
@@ -39,5 +41,10 @@ class CreditCardService
     public function delete(CreditCard $card): void
     {
         $this->repository->delete($card);
+    }
+
+    public function transactions(CreditCardTransactionListDTO $dto): LengthAwarePaginator
+    {
+        return $this->repository->transactions($dto);
     }
 }

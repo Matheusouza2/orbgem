@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\DTO\CreditCardDTO;
+use App\DTO\CreditCardTransactionListDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreditCard\CreateCreditCardRequest;
+use App\Http\Requests\CreditCard\ListCreditCardTransactionsRequest;
 use App\Http\Resources\CreditCardResource;
+use App\Http\Resources\CreditCardTransactionResource;
 use App\Models\CreditCard;
 use App\UseCases\CreditCard\CreateCreditCardUseCase;
 use App\UseCases\CreditCard\DeleteCreditCardUseCase;
 use App\UseCases\CreditCard\ListCreditCardsUseCase;
+use App\UseCases\CreditCard\ListCreditCardTransactionsUseCase;
 use App\UseCases\CreditCard\UpdateCreditCardUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -24,6 +28,11 @@ class CreditCardController extends Controller
     public function index(Request $request, ListCreditCardsUseCase $useCase)
     {
         return CreditCardResource::collection($useCase->execute($request->integer('wallet_id'), $request->user()));
+    }
+
+    public function transactions(ListCreditCardTransactionsRequest $request, CreditCard $creditCard, ListCreditCardTransactionsUseCase $useCase)
+    {
+        return CreditCardTransactionResource::collection($useCase->execute(CreditCardTransactionListDTO::fromArray($request->validated(), $creditCard->id), $creditCard, $request->user()));
     }
 
     public function update(CreateCreditCardRequest $request, CreditCard $creditCard, UpdateCreditCardUseCase $useCase): CreditCardResource

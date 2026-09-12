@@ -77,6 +77,12 @@ class PluggyClient
         return $this->paginated('/investments', ['itemId' => $itemId]);
     }
 
+    /** @return array<int, array<string, mixed>> */
+    public function getInvestmentTransactions(string $investmentId): array
+    {
+        return $this->paginated('/investments/'.$investmentId.'/transactions', []);
+    }
+
     public function createConnectToken(string $clientUserId, string $webhookUrl, ?string $itemId = null): string
     {
         $response = $this->send(fn (PendingRequest $request): Response => $request->post('/connect_token', array_filter([

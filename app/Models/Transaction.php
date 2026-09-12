@@ -90,6 +90,11 @@ class Transaction extends Model
         return $this->belongsToMany(Tag::class);
     }
 
+    public function externalTransactions(): HasMany
+    {
+        return $this->hasMany(ExternalTransaction::class);
+    }
+
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');

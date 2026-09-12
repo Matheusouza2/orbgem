@@ -44,6 +44,11 @@ class Wallet extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function investments(): HasMany
+    {
+        return $this->hasMany(Investment::class);
+    }
+
     public function consolidations(): BelongsToMany
     {
         return $this->belongsToMany(Consolidation::class);

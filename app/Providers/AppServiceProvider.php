@@ -18,6 +18,8 @@ use App\Repositories\ExternalAccountRepository;
 use App\Repositories\ExternalAccountRepositoryInterface;
 use App\Repositories\ExternalInvestmentRepository;
 use App\Repositories\ExternalInvestmentRepositoryInterface;
+use App\Repositories\ExternalInvestmentTransactionRepository;
+use App\Repositories\ExternalInvestmentTransactionRepositoryInterface;
 use App\Repositories\ExternalTransactionRepository;
 use App\Repositories\ExternalTransactionRepositoryInterface;
 use App\Repositories\FinancialCommitmentRepository;
@@ -77,6 +79,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ExternalAccountRepositoryInterface::class, ExternalAccountRepository::class);
         $this->app->bind(ExternalTransactionRepositoryInterface::class, ExternalTransactionRepository::class);
         $this->app->bind(ExternalInvestmentRepositoryInterface::class, ExternalInvestmentRepository::class);
+        $this->app->bind(ExternalInvestmentTransactionRepositoryInterface::class, ExternalInvestmentTransactionRepository::class);
     }
 
     /**

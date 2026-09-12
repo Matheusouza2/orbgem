@@ -3,7 +3,9 @@
 namespace App\Repositories;
 
 use App\DTO\CreditCardDTO;
+use App\DTO\CreditCardTransactionListDTO;
 use App\Models\CreditCard;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 interface CreditCardRepositoryInterface
@@ -19,4 +21,6 @@ interface CreditCardRepositoryInterface
     public function update(CreditCard $card, CreditCardDTO $dto): CreditCard;
 
     public function delete(CreditCard $card): void;
+
+    public function transactions(CreditCardTransactionListDTO $dto): LengthAwarePaginator;
 }

@@ -14,6 +14,12 @@ export default function useCreditCards() {
     const [editingCard, setEditingCard] = useState(null);
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+    const [transactionsCard, setTransactionsCard] = useState(null);
+    const [cardTransactions, setCardTransactions] = useState([]);
+    const [transactionsMeta, setTransactionsMeta] = useState(null);
+    const [transactionsLoading, setTransactionsLoading] = useState(false);
+    const [transactionsError, setTransactionsError] = useState('');
+    const [transactionsFilters, setTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', page: 1 });
     const form = useForm({ ...CreditCard });
 
     useEffect(() => {
@@ -47,5 +53,38 @@ export default function useCreditCards() {
         } catch (error) { setErrors(normalizeErrors(error)); } finally { setSubmitting(false); }
     };
 
-    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit };
+    const loadCardTransactions = async (card, filters = transactionsFilters) => {
+        if (!card) return;
+        setTransactionsLoading(true);
+        setTransactionsError('');
+        try {
+            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, page: filters.page, per_page: 20 });
+            setCardTransactions(response.data ?? []);
+            setTransactionsMeta(response.meta ?? null);
+        } catch (error) {
+            setTransactionsError(error.message);
+        } finally {
+            setTransactionsLoading(false);
+        }
+    };
+
+    const openTransactions = (card) => {
+        const filters = { month: new Date().toISOString().slice(0, 7), status: '', page: 1 };
+        setTransactionsCard(card);
+        setTransactionsFilters(filters);
+        loadCardTransactions(card, filters);
+    };
+    const closeTransactions = () => { if (!transactionsLoading) setTransactionsCard(null); };
+    const updateTransactionsFilters = (key, value) => {
+        const filters = { ...transactionsFilters, [key]: value, page: 1 };
+        setTransactionsFilters(filters);
+        loadCardTransactions(transactionsCard, filters);
+    };
+    const changeTransactionsPage = (page) => {
+        const filters = { ...transactionsFilters, page };
+        setTransactionsFilters(filters);
+        loadCardTransactions(transactionsCard, filters);
+    };
+
+    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit, transactionsCard, cardTransactions, transactionsMeta, transactionsLoading, transactionsError, transactionsFilters, openTransactions, closeTransactions, updateTransactionsFilters, changeTransactionsPage };
 }
