@@ -10,6 +10,9 @@ export default function useOpenFinance() {
     const [loading, setLoading] = useState(true);
     const [connecting, setConnecting] = useState(false);
     const [errors, setErrors] = useState({});
+    const [syncingConnection, setSyncingConnection] = useState(null);
+    const [syncForm, setSyncForm] = useState({ period: '1y', from: '', to: '' });
+    const [syncing, setSyncing] = useState(false);
 
     const loadItems = () => FinancialService.listOpenFinanceItems().then(setItems).catch((error) => setErrors(normalizeErrors(error)));
 
@@ -59,5 +62,23 @@ export default function useOpenFinance() {
         try { await FinancialService.deleteOpenFinanceItem(item.id); setItems((current) => current.filter((entry) => entry.id !== item.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 
-    return { wallets, items, selectedWalletId, setSelectedWalletId, loading, connecting, errors, connect, disconnect, reload: loadItems };
+    const openSync = (item) => { setSyncingConnection(item); setSyncForm({ period: '1y', from: '', to: '' }); setErrors({}); };
+    const closeSync = () => { if (!syncing) setSyncingConnection(null); };
+    const sync = async (event) => {
+        event.preventDefault();
+        if (!syncingConnection) return;
+        setSyncing(true); setErrors({});
+        const today = new Date();
+        const to = today.toISOString().slice(0, 10);
+        const fromDate = new Date(today);
+        if (syncForm.period === '30d') fromDate.setDate(fromDate.getDate() - 30);
+        if (syncForm.period === '6m') fromDate.setMonth(fromDate.getMonth() - 6);
+        if (syncForm.period === '1y') fromDate.setFullYear(fromDate.getFullYear() - 1);
+        try {
+            await FinancialService.syncOpenFinanceConnection(syncingConnection.id, { from: syncForm.period === 'custom' ? syncForm.from : fromDate.toISOString().slice(0, 10), to: syncForm.period === 'custom' ? syncForm.to : to });
+            setSyncingConnection(null); await loadItems();
+        } catch (error) { setErrors(normalizeErrors(error)); } finally { setSyncing(false); }
+    };
+
+    return { wallets, items, selectedWalletId, setSelectedWalletId, loading, connecting, errors, connect, disconnect, reload: loadItems, syncingConnection, syncForm, setSyncForm, syncing, openSync, closeSync, sync };
 }

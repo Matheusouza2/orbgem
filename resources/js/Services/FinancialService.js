@@ -71,6 +71,7 @@ const FinancialService = {
     listOpenFinanceItems: async (options = {}) => (await request('/api/v1/open-finance/items', options)).data,
     storeOpenFinanceItem: async (payload, options = {}) => request('/api/v1/open-finance/items', { method: 'POST', body: JSON.stringify(payload), ...options }),
     deleteOpenFinanceItem: async (itemId, options = {}) => request(`/api/v1/open-finance/items/${itemId}`, { method: 'DELETE', ...options }),
+    syncOpenFinanceConnection: async (connectionId, payload, options = {}) => request(`/api/v1/open-finance/connections/${connectionId}/sync`, { method: 'POST', body: JSON.stringify(payload), ...options }),
     listTransactions: async (walletId, accountId, month, options = {}) => {
         const params = new URLSearchParams({ wallet_id: walletId, month });
 

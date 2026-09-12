@@ -64,11 +64,17 @@ class PluggyClient
     /** @return array<int, array<string, mixed>> */
     public function getTransactions(string $accountId, ?string $from = null, ?string $to = null): array
     {
-        return $this->results('/transactions', array_filter([
+        return $this->paginated('/transactions', array_filter([
             'accountId' => $accountId,
             'from' => $from,
             'to' => $to,
         ], static fn (mixed $value): bool => $value !== null));
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function getInvestments(string $itemId): array
+    {
+        return $this->paginated('/investments', ['itemId' => $itemId]);
     }
 
     public function createConnectToken(string $clientUserId, string $webhookUrl, ?string $itemId = null): string
@@ -98,6 +104,23 @@ class PluggyClient
         $data = $this->decode($this->send(fn (PendingRequest $request): Response => $request->get($path, $query)));
 
         return is_array($data['results'] ?? null) ? $data['results'] : [];
+    }
+
+    /** @param array<string, mixed> $query @return array<int, array<string, mixed>> */
+    private function paginated(string $path, array $query): array
+    {
+        $page = 1;
+        $all = [];
+        do {
+            $data = $this->decode($this->send(fn (PendingRequest $request): Response => $request->get($path, [...$query, 'pageSize' => 500, 'page' => $page])));
+            $results = is_array($data['results'] ?? null) ? $data['results'] : [];
+            $all = [...$all, ...$results];
+            $totalPages = (int) ($data['totalPages'] ?? 0);
+            $hasNext = $totalPages > $page ? true : count($results) === 500;
+            $page++;
+        } while ($hasNext);
+
+        return $all;
     }
 
     private function request(?string $apiKey = null): PendingRequest

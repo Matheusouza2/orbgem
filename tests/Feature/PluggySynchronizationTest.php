@@ -30,6 +30,7 @@ class PluggySynchronizationTest extends TestCase
             'https://api.pluggy.ai/items/item-1' => Http::response(['id' => 'item-1', 'status' => 'UPDATED', 'connector' => ['name' => 'Banco Teste']], 200),
             'https://api.pluggy.ai/accounts*' => Http::response(['results' => [['id' => 'account-1', 'type' => 'BANK', 'subtype' => 'CHECKING_ACCOUNT', 'name' => 'Conta principal', 'balance' => 100.00]]], 200),
             'https://api.pluggy.ai/transactions*' => Http::response(['results' => [['id' => 'transaction-1', 'description' => 'Salário', 'amount' => 1000, 'type' => 'CREDIT', 'date' => '2026-09-12', 'status' => 'POSTED']]], 200),
+            'https://api.pluggy.ai/investments*' => Http::response(['results' => []], 200),
         ]);
 
         SyncPluggyConnectionJob::dispatchSync($connection->id);

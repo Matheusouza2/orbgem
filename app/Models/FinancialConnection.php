@@ -24,4 +24,9 @@ class FinancialConnection extends Model
     {
         return $this->hasMany(ExternalAccount::class);
     }
+
+    public function externalInvestments(): HasMany
+    {
+        return $this->hasMany(ExternalInvestment::class);
+    }
 }

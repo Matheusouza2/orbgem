@@ -13,6 +13,12 @@ class PluggyWebhookRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['event' => ['required', 'string'], 'itemId' => ['required', 'uuid']];
+        return [
+            'event' => ['required', 'string'],
+            'itemId' => ['required', 'uuid'],
+            'accountId' => ['nullable', 'uuid'],
+            'transactionIds' => ['nullable', 'array'],
+            'transactionIds.*' => ['uuid'],
+        ];
     }
 }

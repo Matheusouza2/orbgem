@@ -14,7 +14,7 @@ class SyncPluggyAccountJob implements ShouldQueue
     public int $tries = 3;
 
     /** @param array<string, mixed> $remoteAccount */
-    public function __construct(public int $connectionId, public array $remoteAccount) {}
+    public function __construct(public int $connectionId, public array $remoteAccount, public ?string $from = null, public ?string $to = null) {}
 
     public function handle(FinancialConnectionService $connections, ExternalAccountService $accounts): void
     {
@@ -24,6 +24,6 @@ class SyncPluggyAccountJob implements ShouldQueue
         }
 
         $externalAccount = $accounts->sync($connection, $this->remoteAccount);
-        SyncPluggyTransactionsJob::dispatch($externalAccount->id);
+        SyncPluggyTransactionsJob::dispatch($externalAccount->id, $this->from, $this->to);
     }
 }

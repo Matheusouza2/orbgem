@@ -15,7 +15,7 @@ class SyncPluggyTransactionsJob implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public int $externalAccountId) {}
+    public function __construct(public int $externalAccountId, public ?string $from = null, public ?string $to = null) {}
 
     public function handle(ExternalAccountRepositoryInterface $accounts, PluggyClient $client, PluggyTransactionMapper $mapper, ExternalTransactionService $transactions): void
     {
@@ -25,7 +25,7 @@ class SyncPluggyTransactionsJob implements ShouldQueue
         }
 
         $type = $externalAccount->accountable_type === 'App\\Models\\CreditCard' ? 'credit_card' : 'account';
-        foreach ($client->getTransactions($externalAccount->external_id) as $remoteTransaction) {
+        foreach ($client->getTransactions($externalAccount->external_id, $this->from, $this->to) as $remoteTransaction) {
             $dto = $mapper->map($remoteTransaction, $externalAccount->financialConnection->wallet_id, (int) $externalAccount->accountable_id, $type);
             $transactions->sync($externalAccount, $dto);
         }

@@ -13,7 +13,7 @@ class SyncPluggyConnectionJob implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public int $connectionId) {}
+    public function __construct(public int $connectionId, public ?string $from = null, public ?string $to = null) {}
 
     public function handle(FinancialConnectionService $connections, PluggyClient $client): void
     {
@@ -26,8 +26,10 @@ class SyncPluggyConnectionJob implements ShouldQueue
         $connections->upsertPluggy($connection->wallet_id, $connection->external_id, $item);
 
         foreach ($client->getAccounts($connection->external_id) as $remoteAccount) {
-            SyncPluggyAccountJob::dispatch($connection->id, $remoteAccount);
+            SyncPluggyAccountJob::dispatch($connection->id, $remoteAccount, $this->from, $this->to);
         }
+
+        SyncPluggyInvestmentsJob::dispatch($connection->id);
 
         $connections->markSynced($connection);
     }

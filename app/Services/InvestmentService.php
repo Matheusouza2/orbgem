@@ -31,6 +31,11 @@ class InvestmentService
         $this->investmentRepository->delete($investment);
     }
 
+    public function find(int $investmentId): ?Investment
+    {
+        return $this->investmentRepository->find($investmentId);
+    }
+
     public function activeCdi(): Collection
     {
         return $this->investmentRepository->activeCdi();

@@ -12,4 +12,6 @@ interface ExternalAccountRepositoryInterface
     public function find(int $id): ?ExternalAccount;
 
     public function forConnection(int $connectionId): Collection;
+
+    public function findByConnectionAndExternalId(int $connectionId, string $externalId): ?ExternalAccount;
 }

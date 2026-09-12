@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FinancialConnection;
 use App\Repositories\FinancialConnectionRepositoryInterface;
+use Illuminate\Support\Collection;
 
 class FinancialConnectionService
 {
@@ -31,6 +32,11 @@ class FinancialConnectionService
     public function findByProviderExternalId(string $provider, string $externalId): ?FinancialConnection
     {
         return $this->repository->findByProviderExternalId($provider, $externalId);
+    }
+
+    public function forWallets(array $walletIds): Collection
+    {
+        return $this->repository->forWallets($walletIds);
     }
 
     public function markSynced(FinancialConnection $connection): void

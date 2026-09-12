@@ -16,6 +16,8 @@ use App\Repositories\CreditCardRepository;
 use App\Repositories\CreditCardRepositoryInterface;
 use App\Repositories\ExternalAccountRepository;
 use App\Repositories\ExternalAccountRepositoryInterface;
+use App\Repositories\ExternalInvestmentRepository;
+use App\Repositories\ExternalInvestmentRepositoryInterface;
 use App\Repositories\ExternalTransactionRepository;
 use App\Repositories\ExternalTransactionRepositoryInterface;
 use App\Repositories\FinancialCommitmentRepository;
@@ -74,6 +76,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FinancialConnectionRepositoryInterface::class, FinancialConnectionRepository::class);
         $this->app->bind(ExternalAccountRepositoryInterface::class, ExternalAccountRepository::class);
         $this->app->bind(ExternalTransactionRepositoryInterface::class, ExternalTransactionRepository::class);
+        $this->app->bind(ExternalInvestmentRepositoryInterface::class, ExternalInvestmentRepository::class);
     }
 
     /**

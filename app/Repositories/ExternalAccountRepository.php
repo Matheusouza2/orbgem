@@ -24,4 +24,9 @@ class ExternalAccountRepository implements ExternalAccountRepositoryInterface
     {
         return ExternalAccount::query()->where('financial_connection_id', $connectionId)->get();
     }
+
+    public function findByConnectionAndExternalId(int $connectionId, string $externalId): ?ExternalAccount
+    {
+        return ExternalAccount::query()->where(['financial_connection_id' => $connectionId, 'external_id' => $externalId])->first();
+    }
 }

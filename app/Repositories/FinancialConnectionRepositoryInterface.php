@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\FinancialConnection;
+use Illuminate\Support\Collection;
 
 interface FinancialConnectionRepositoryInterface
 {
@@ -11,4 +12,6 @@ interface FinancialConnectionRepositoryInterface
     public function find(int $id): ?FinancialConnection;
 
     public function findByProviderExternalId(string $provider, string $externalId): ?FinancialConnection;
+
+    public function forWallets(array $walletIds): Collection;
 }

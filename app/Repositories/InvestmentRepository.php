@@ -30,6 +30,11 @@ class InvestmentRepository implements InvestmentRepositoryInterface
         $investment->delete();
     }
 
+    public function find(int $investmentId): ?Investment
+    {
+        return Investment::query()->find($investmentId);
+    }
+
     public function activeCdi(): Collection
     {
         return Investment::query()->where('cdi_linked', true)->where('active', true)->get();

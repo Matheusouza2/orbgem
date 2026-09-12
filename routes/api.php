@@ -85,6 +85,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->whereNumber('budget');
     Route::get('/planning-summary', PlanningSummaryController::class);
     Route::post('/open-finance/connect-token', [OpenFinanceController::class, 'connectToken']);
+    Route::post('/open-finance/connections/{connection}/sync', [OpenFinanceController::class, 'sync'])->whereNumber('connection');
     Route::get('/open-finance/items', [OpenFinanceController::class, 'index']);
     Route::post('/open-finance/items', [OpenFinanceController::class, 'store']);
     Route::delete('/open-finance/items/{item}', [OpenFinanceController::class, 'destroy'])->whereNumber('item');
