@@ -6,6 +6,7 @@ use App\Exceptions\PluggyException;
 use Closure;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class PluggyClient
@@ -50,6 +51,7 @@ class PluggyClient
             return $response;
         }
 
+        $this->forgetCachedApiKey();
         $this->refreshedApiKey = $this->authenticate();
 
         return $callback($this->request($this->refreshedApiKey));
@@ -57,6 +59,10 @@ class PluggyClient
 
     private function apiKey(): string
     {
+        if ($this->hasClientCredentials()) {
+            return Cache::remember($this->apiKeyCacheKey(), now()->addMinutes(110), fn (): string => $this->authenticate());
+        }
+
         $apiKey = config('services.pluggy.api_key');
         if (is_string($apiKey) && $apiKey !== '') {
             return $apiKey;
@@ -67,6 +73,18 @@ class PluggyClient
         }
 
         return $this->authenticate();
+    }
+
+    private function apiKeyCacheKey(): string
+    {
+        return 'pluggy.api_key.'.hash('sha256', (string) config('services.pluggy.client_id'));
+    }
+
+    private function forgetCachedApiKey(): void
+    {
+        if ($this->hasClientCredentials()) {
+            Cache::forget($this->apiKeyCacheKey());
+        }
     }
 
     private function authenticate(): string

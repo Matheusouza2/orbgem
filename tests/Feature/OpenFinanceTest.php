@@ -19,7 +19,7 @@ class OpenFinanceTest extends TestCase
     public function test_owner_can_request_a_connect_token_without_exposing_credentials(): void
     {
         [$user, $wallet] = $this->walletWithMember();
-        config(['services.pluggy.api_key' => 'test-api-key']);
+        config(['services.pluggy.api_key' => 'test-api-key', 'services.pluggy.client_id' => null, 'services.pluggy.client_secret' => null]);
         Http::fake(['https://api.pluggy.ai/connect_token' => Http::response(['accessToken' => 'connect-token'], 200)]);
 
         $this->actingAs($user, 'sanctum')->postJson('/api/v1/open-finance/connect-token', ['wallet_id' => $wallet->id])->assertOk()->assertJson(['accessToken' => 'connect-token']);
