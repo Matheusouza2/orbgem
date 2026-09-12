@@ -7,6 +7,12 @@
 .phpunit.result.cache
 /.codex
 /.superpowers
+/.agents/
+docs/
+/storage/
+/AGENTS.md
+/CLAUDE.md
+/pluggy.txt
 /.cursor/
 /.idea
 /.nova

@@ -1,58 +1,203 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Orbgem
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+Orbgem é uma aplicação de organização financeira pessoal para centralizar contas, transações, cartões, investimentos e planejamento em um único lugar.
+
+<p>
+  <img src="https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white" alt="Laravel 13">
+  <img src="https://img.shields.io/badge/React-Inertia-61DAFB?logo=react&logoColor=111827" alt="React com Inertia">
+  <img src="https://img.shields.io/badge/Docker-produção-2496ED?logo=docker&logoColor=white" alt="Docker">
 </p>
 
-## About Laravel
+## O que o projeto oferece
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Carteiras e contas bancárias, com instituição, conta padrão e visibilidade nos totais.
+- Cartões de crédito, faturas, compras parceladas e pagamentos.
+- Lançamentos financeiros, transferências, reversões e categorização.
+- Transações recorrentes e compromissos financeiros.
+- Metas financeiras, orçamentos e consolidações.
+- Investimentos em ações, FIIs, renda fixa e investimentos vinculados a um percentual do CDI.
+- Contabilização diária de rendimentos CDI usando dados da Brapi.
+- Integração Open Finance com Pluggy.
+- Notificações em tempo real preparadas para Laravel Reverb.
+- Interface em português com ícones e identidade visual das instituições bancárias.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Backend
 
-## Learning Laravel
+- PHP 8.4+ e Laravel 13
+- MariaDB
+- Redis para cache, sessão, filas e broadcasting
+- Laravel Reverb para WebSockets
+- Pluggy para Open Finance
+- Brapi para cotações e CDI
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Frontend
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- React 19
+- Inertia.js
+- Vite
+- Tailwind CSS
+- Flowbite React
+- React Select e Flatpickr
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Arquitetura
 
-## Agentic Development
+O backend segue o fluxo:
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+Route → FormRequest → Controller → DTO → UseCase → Service → Repository → Model
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+As respostas públicas são serializadas por Resources. No frontend, as telas seguem:
 
-## Contributing
+```text
+Page → Hook → Service → Laravel API
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Os módulos financeiros estão organizados em `resources/js/Pages/Financial`, enquanto os casos de uso, serviços e repositórios ficam separados em `app/UseCases`, `app/Services` e `app/Repositories`.
 
-## Code of Conduct
+## Requisitos
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- Docker e Docker Compose
+- Git
+- MariaDB 10.6+ acessível pela aplicação
 
-## Security Vulnerabilities
+Para executar sem Docker, também são necessários PHP, Composer, Node.js e npm compatíveis com as versões do projeto.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Desenvolvimento local
 
-## License
+```bash
+cp .env.example .env
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Configure no `.env` a conexão do MariaDB e as credenciais das integrações opcionais. Depois, suba o ambiente:
+
+```bash
+docker compose up -d --build
+```
+
+O Compose de desenvolvimento executa a aplicação HTTP, PHP-FPM, Nginx e Vite. A aplicação fica disponível na porta definida por `APP_PORT` — `8002` por padrão.
+
+Para executar as migrations:
+
+```bash
+docker compose exec app php artisan migrate
+```
+
+Para acompanhar os logs:
+
+```bash
+docker compose logs -f app
+```
+
+## Variáveis de ambiente
+
+As integrações externas são configuradas somente no backend:
+
+```dotenv
+BRAPI_BASE_URL=https://brapi.dev
+BRAPI_TOKEN=
+
+PLUGGY_BASE_URL=https://api.pluggy.ai
+PLUGGY_CLIENT_ID=
+PLUGGY_CLIENT_SECRET=
+PLUGGY_API_KEY=
+```
+
+Nunca publique valores reais dessas variáveis no repositório.
+
+> [!WARNING]
+> O arquivo `.env` é ignorado pelo Git. Em produção, crie o arquivo diretamente no servidor e preencha também `APP_KEY`, banco externo, Redis e credenciais do Reverb.
+
+## Produção
+
+O ambiente de produção usa uma imagem imutável publicada no Docker Hub. O MariaDB permanece no servidor; Redis, worker, scheduler e Reverb são executados pelo Compose.
+
+O modelo de variáveis está em [`docker/.env.production.example`](docker/.env.production.example). A configuração do ambiente está em [`docker-compose.production.yml`](docker-compose.production.yml).
+
+No servidor, o arquivo deve existir em:
+
+```text
+/var/www/webapps/orbgem.com.br/.env
+```
+
+O workflow [`deploy.yml`](.github/workflows/deploy.yml) é executado em pushes na branch `main` e:
+
+1. constrói o `Dockerfile.production`;
+2. publica `matheusouza2/orbgem:latest` e uma tag baseada no commit;
+3. conecta ao servidor por SSH;
+4. atualiza o Compose;
+5. faz pull da imagem e reinicia os serviços.
+
+No primeiro uso, o servidor precisa ter Docker, Docker Compose e permissões para o usuário configurado em `SERVER_USER`. O Nginx do host deve encaminhar:
+
+```text
+seu-dominio.example    → 127.0.0.1:8000
+ws.seu-dominio.example → 127.0.0.1:8080
+```
+
+Existe um exemplo de proxy em [`docker/nginx/orbgem-proxy.conf.example`](docker/nginx/orbgem-proxy.conf.example).
+
+## Filas, scheduler e CDI
+
+O Compose de produção mantém três processos Laravel separados:
+
+- `queue`: processa jobs usando Redis;
+- `scheduler`: executa as tarefas agendadas;
+- `reverb`: mantém o servidor WebSocket disponível.
+
+O rendimento dos investimentos vinculados ao CDI é contabilizado pelo comando:
+
+```bash
+php artisan investments:accrue-cdi
+```
+
+O scheduler executa esse processo diariamente. Se houver indisponibilidade temporária da fonte, o comando pode ser executado novamente para realizar o processamento pendente sem duplicar a mesma data.
+
+## Qualidade e comandos úteis
+
+Executar a suíte de testes:
+
+```bash
+php artisan test --compact
+```
+
+Formatar o código PHP:
+
+```bash
+vendor/bin/pint --dirty --format agent
+```
+
+Construir os assets:
+
+```bash
+npm run build
+```
+
+Verificar as rotas:
+
+```bash
+php artisan route:list
+```
+
+## Principais páginas
+
+| Página | Rota |
+| --- | --- |
+| Dashboard financeiro | `/dashboard-financeiro` |
+| Carteiras | `/carteiras` |
+| Contas | `/contas` |
+| Cartões de crédito | `/cartoes-de-credito` |
+| Transações | `/transacoes` |
+| Recorrências | `/recorrencias` |
+| Categorias | `/categorias` |
+| Metas | `/metas` |
+| Investimentos | `/investimentos` |
+| Open Finance | `/open-finance` |
+
+## Documentação adicional
+
+- [Manual funcional](docs/MANUAL.md)
+- [Exemplo de ambiente Docker de produção](docker/.env.production.example)
+- [Proxy Nginx do host](docker/nginx/orbgem-proxy.conf.example)
