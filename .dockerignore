@@ -8,6 +8,7 @@ vendor
 public/build
 bootstrap/cache/*.php
 storage/logs
+storage/inertia-devtools
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
