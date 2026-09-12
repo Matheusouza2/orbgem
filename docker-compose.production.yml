@@ -77,13 +77,13 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Defina REDIS_PASSWORD no .env}
     command: >-
-      redis-server
+      sh -c 'exec redis-server
       --appendonly yes
-      --requirepass $${REDIS_PASSWORD}
+      --requirepass "$${REDIS_PASSWORD}"'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -h 127.0.0.1 -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
