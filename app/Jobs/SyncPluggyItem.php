@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Services\FinancialConnectionService;
 use App\Services\PluggyItemService;
-use App\Services\PluggySyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -13,12 +13,15 @@ class SyncPluggyItem implements ShouldQueue
 
     public function __construct(public int $itemId) {}
 
-    public function handle(PluggyItemService $items, PluggySyncService $sync): void
+    public function handle(PluggyItemService $items, FinancialConnectionService $connections): void
     {
         $item = $items->find($this->itemId);
 
         if ($item !== null) {
-            $sync->sync($item);
+            $connection = $connections->findByProviderExternalId('pluggy', $item->pluggy_item_id);
+            if ($connection !== null) {
+                SyncPluggyConnectionJob::dispatch($connection->id);
+            }
         }
     }
 }

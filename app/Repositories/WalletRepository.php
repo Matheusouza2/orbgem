@@ -82,6 +82,11 @@ class WalletRepository implements WalletRepositoryInterface
         return $wallet->ownerMemberships()->count();
     }
 
+    public function ownerMember(int $walletId): ?WalletMember
+    {
+        return WalletMember::query()->where('wallet_id', $walletId)->where('role', WalletMemberRole::OWNER)->orderBy('id')->first();
+    }
+
     public function lockWallet(int $walletId): Wallet
     {
         return Wallet::query()->whereKey($walletId)->lockForUpdate()->firstOrFail();

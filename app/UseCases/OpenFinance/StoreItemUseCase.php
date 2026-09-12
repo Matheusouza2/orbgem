@@ -5,6 +5,7 @@ namespace App\UseCases\OpenFinance;
 use App\Enums\WalletMemberRole;
 use App\Models\PluggyItem;
 use App\Models\User;
+use App\Services\FinancialConnectionService;
 use App\Services\PluggyItemService;
 use App\Services\WalletMembershipAuthorization;
 use App\Services\WalletService;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class StoreItemUseCase
 {
-    public function __construct(private PluggyItemService $items, private WalletService $wallets, private WalletMembershipAuthorization $auth) {}
+    public function __construct(private PluggyItemService $items, private WalletService $wallets, private WalletMembershipAuthorization $auth, private FinancialConnectionService $connections) {}
 
     public function execute(User $user, int $walletId, string $itemId): PluggyItem
     {
@@ -21,6 +22,7 @@ class StoreItemUseCase
             throw new ModelNotFoundException;
         }
         $this->auth->authorize($user, $wallet, WalletMemberRole::EDITOR, WalletMemberRole::OWNER);
+        $this->connections->upsertPluggy($walletId, $itemId, ['status' => 'CREATING']);
         $item = $this->items->upsert($user->id, $walletId, $itemId, ['status' => 'CREATING']);
 
         return $item->load('accounts');

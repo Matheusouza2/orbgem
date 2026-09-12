@@ -59,6 +59,11 @@ class WalletService
         return $this->walletRepository->findMemberInWallet($walletId, $memberId);
     }
 
+    public function ownerMember(int $walletId): ?WalletMember
+    {
+        return $this->walletRepository->ownerMember($walletId);
+    }
+
     public function addMemberToWallet(Wallet $wallet, User $user, WalletMemberRole $role): WalletMember
     {
         if ($this->walletRepository->findMemberByUser($wallet, $user->id) !== null) {

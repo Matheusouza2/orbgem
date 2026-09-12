@@ -33,6 +33,8 @@ interface WalletRepositoryInterface
 
     public function ownerCount(Wallet $wallet): int;
 
+    public function ownerMember(int $walletId): ?WalletMember;
+
     public function lockWallet(int $walletId): Wallet;
 
     public function lockMember(int $memberId): WalletMember;

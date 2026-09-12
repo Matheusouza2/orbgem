@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class CreditCard extends Model
 {
@@ -41,5 +42,10 @@ class CreditCard extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(CreditCardInvoice::class);
+    }
+
+    public function externalAccounts(): MorphMany
+    {
+        return $this->morphMany(ExternalAccount::class, 'accountable');
     }
 }
