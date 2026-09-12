@@ -1,0 +1,93 @@
+name: ${COMPOSE_PROJECT_NAME:-orbgem}
+
+x-laravel-image: &laravel-image
+  image: matheusouza2/orbgem:${IMAGE_TAG:-latest}
+
+x-app-environment: &app-environment
+  APP_ENV: production
+  APP_DEBUG: "false"
+  DB_CONNECTION: mariadb
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+  CACHE_STORE: redis
+  SESSION_DRIVER: redis
+  QUEUE_CONNECTION: redis
+  BROADCAST_CONNECTION: reverb
+  REVERB_SERVER_HOST: 0.0.0.0
+  REVERB_SERVER_PORT: 8080
+  REVERB_SCHEME: ${REVERB_SCHEME:-https}
+
+services:
+  app:
+    <<: *laravel-image
+    env_file:
+      - .env
+    environment:
+      <<: *app-environment
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  queue:
+    <<: *laravel-image
+    env_file:
+      - .env
+    environment:
+      <<: *app-environment
+    command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--timeout=90", "--max-time=3600"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  scheduler:
+    <<: *laravel-image
+    env_file:
+      - .env
+    environment:
+      <<: *app-environment
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  reverb:
+    <<: *laravel-image
+    env_file:
+      - .env
+    environment:
+      <<: *app-environment
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    ports:
+      - "127.0.0.1:${REVERB_BIND_PORT:-8080}:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Defina REDIS_PASSWORD no .env}
+    command: >-
+      redis-server
+      --appendonly yes
+      --requirepass $${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  redis_data:

@@ -1,0 +1,33 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.0.0",
+        "@vitejs/plugin-react": "^6.1.1",
+        "concurrently": "^10.0.3",
+        "laravel-vite-plugin": "^3.1",
+        "tailwindcss": "^4.0.0",
+        "vite": "^8.0.0"
+    },
+    "optionalDependencies": {
+        "@laravel/multiplex": "^0.4.1"
+    },
+    "dependencies": {
+        "@inertiajs/react": "^3.7.0",
+        "@react-input/mask": "^2.0.4",
+        "flatpickr": "^4.6.13",
+        "flowbite-react": "^0.12.17",
+        "imask": "^7.6.1",
+        "logos-bancos-br": "^0.7.2",
+        "lucide-react": "^1.43.0",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "react-flatpickr": "^4.0.11",
+        "react-select": "^5.10.2"
+    }
+}

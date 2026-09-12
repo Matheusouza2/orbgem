@@ -1,0 +1,40 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+      - node_modules:/var/www/html/node_modules
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${APP_PORT:-8002}:8000"
+      - "${VITE_PORT:-5173}:5173"
+    environment:
+      APP_ENV: "${APP_ENV:-local}"
+      APP_DEBUG: "${APP_DEBUG:-true}"
+      APP_URL: "http://localhost:${APP_PORT:-8002}"
+      DB_CONNECTION: mariadb
+      DB_HOST: host.docker.internal
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_DATABASE: "${DB_DATABASE:-orbgem}"
+      DB_USERNAME: "${DB_USERNAME:-root}"
+      DB_PASSWORD: "${DB_PASSWORD:-root}"
+      SESSION_DRIVER: "${SESSION_DRIVER:-database}"
+      CACHE_STORE: "${CACHE_STORE:-database}"
+      QUEUE_CONNECTION: "${QUEUE_CONNECTION:-database}"
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-false}"
+      CHOKIDAR_USEPOLLING: "${CHOKIDAR_USEPOLLING:-true}"
+      PLUGGY_CLIENT_ID: "${PLUGGY_CLIENT_ID}"
+      PLUGGY_CLIENT_SECRET: "${PLUGGY_CLIENT_SECRET}"
+      PLUGGY_API_KEY: "${PLUGGY_API_KEY}"
+      BRAPI_TOKEN: "${BRAPI_TOKEN}"
+
+    stdin_open: true
+    tty: true
+
+volumes:
+  vendor:
+  node_modules:

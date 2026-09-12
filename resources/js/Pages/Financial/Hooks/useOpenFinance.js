@@ -1,0 +1,63 @@
+import { useEffect, useState } from 'react';
+import FinancialService from '@/Services/FinancialService';
+
+const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível concluir a operação.' };
+
+export default function useOpenFinance() {
+    const [wallets, setWallets] = useState([]);
+    const [items, setItems] = useState([]);
+    const [selectedWalletId, setSelectedWalletId] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [connecting, setConnecting] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    const loadItems = () => FinancialService.listOpenFinanceItems().then(setItems).catch((error) => setErrors(normalizeErrors(error)));
+
+    useEffect(() => {
+        Promise.allSettled([FinancialService.listWallets(), FinancialService.listOpenFinanceItems()]).then(([walletResult, itemResult]) => {
+            if (walletResult.status === 'fulfilled') {
+                setWallets(walletResult.value);
+                setSelectedWalletId(walletResult.value[0]?.id ?? '');
+            } else {
+                setErrors(normalizeErrors(walletResult.reason));
+            }
+
+            if (itemResult.status === 'fulfilled') {
+                setItems(itemResult.value);
+            } else {
+                setErrors((current) => ({ ...current, integration: itemResult.reason?.message ?? 'Não foi possível carregar as conexões Open Finance.' }));
+            }
+        }).finally(() => setLoading(false));
+    }, []);
+
+    const loadWidgetScript = () => new Promise((resolve, reject) => {
+        if (window.PluggyConnect) { resolve(); return; }
+        const existing = document.querySelector('script[data-pluggy-connect]');
+        if (existing) { existing.addEventListener('load', resolve, { once: true }); existing.addEventListener('error', reject, { once: true }); return; }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.pluggy.ai/pluggy-connect/v2.8.2/pluggy-connect.js';
+        script.async = true;
+        script.dataset.pluggyConnect = 'true';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+
+    const connect = async () => {
+        if (!selectedWalletId) return;
+        setConnecting(true);
+        setErrors({});
+        try {
+            const [{ accessToken }] = await Promise.all([FinancialService.getOpenFinanceToken(Number(selectedWalletId)), loadWidgetScript()]);
+            const widget = new window.PluggyConnect({ connectToken: accessToken, includeSandbox: false, onSuccess: async (data) => { await FinancialService.storeOpenFinanceItem({ wallet_id: Number(selectedWalletId), item_id: data.item.id }); await loadItems(); setConnecting(false); }, onError: (error) => { setErrors({ general: error?.message ?? 'A conexão não foi concluída.' }); setConnecting(false); } });
+            widget.init();
+        } catch (error) { setErrors(normalizeErrors(error)); setConnecting(false); }
+    };
+
+    const disconnect = async (item) => {
+        if (!window.confirm(`Desconectar ${item.connector_name || 'esta instituição'}?`)) return;
+        try { await FinancialService.deleteOpenFinanceItem(item.id); setItems((current) => current.filter((entry) => entry.id !== item.id)); } catch (error) { setErrors(normalizeErrors(error)); }
+    };
+
+    return { wallets, items, selectedWalletId, setSelectedWalletId, loading, connecting, errors, connect, disconnect, reload: loadItems };
+}

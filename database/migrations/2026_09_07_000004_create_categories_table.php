@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('categories', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('wallet_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('parent_id')->nullable()->constrained('categories')->nullOnDelete();
+            $table->string('name');
+            $table->string('type');
+            $table->string('icon')->nullable();
+            $table->boolean('active')->default(true);
+            $table->timestamps();
+            $table->index(['wallet_id', 'type', 'active']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('categories');
+    }
+};

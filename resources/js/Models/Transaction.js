@@ -1,0 +1,25 @@
+const Transaction = {
+    wallet_id: null,
+    account_id: null,
+    category_id: null,
+    merchant_id: null,
+    description: '',
+    type: 'INCOME',
+    effect: 'CREDIT',
+    amount: 0,
+    financial_instrument_type: 'ACCOUNT',
+    transaction_date: new Date().toISOString().slice(0, 10),
+    competence_date: new Date().toISOString().slice(0, 10),
+    due_date: null,
+    recurrence_type: 'NONE',
+    installment_initial: null,
+    installment_count: null,
+    installment_periodicity: null,
+    auto_post_on_due_date: false,
+    paid_at: null,
+    status: 'POSTED',
+    payment_channel: 'PIX',
+    notes: '',
+};
+
+export default Transaction;

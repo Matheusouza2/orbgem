@@ -1,0 +1,19 @@
+Implemente a conexão com Pluggy.ai, no .env já existem as variaveis PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET e PLUGGY_API_KEY.
+
+- Adicione um endpoint server-side que cria Connect Tokens. Esse token permite o frontend abra o Pluggy Connect de forma segura.
+
+- Adicione o widget Pluggy Connect ao frontend e inicialize-o com o Connect Token do Passo 3. O widget cuida de todo o fluxo de consentimento Open Finance — seleção de banco, autenticação e aprovação de compartilhamento de dados.
+
+- Adicione um endpoint de webhook ao routes/web.php para ser notificado em tempo real quando itens são criados, atualizados ou falham.
+
+# Troque credenciais por uma chave de API
+curl -X POST https://api.pluggy.ai/auth \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientId": "YOUR_CLIENT_ID",
+    "clientSecret": "YOUR_CLIENT_SECRET"
+  }'
+
+# Fetch accounts for your connection
+curl https://api.pluggy.ai/accounts?itemId=YOUR_ITEM_ID \
+  -H "X-API-KEY: YOUR_API_KEY"
