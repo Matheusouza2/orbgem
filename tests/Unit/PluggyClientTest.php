@@ -47,4 +47,23 @@ class PluggyClientTest extends TestCase
 
         app(PluggyClient::class)->getItem('item-1');
     }
+
+    public function test_it_fetches_transactions_using_cursor_pagination(): void
+    {
+        config(['services.pluggy.api_key' => 'test-api-key', 'services.pluggy.client_id' => null, 'services.pluggy.client_secret' => null]);
+        Http::fake([
+            'https://api.pluggy.ai/v2/transactions*' => Http::sequence()
+                ->push(['results' => [['id' => 'transaction-1']], 'next' => '?after=cursor-2'], 200)
+                ->push(['results' => [['id' => 'transaction-2']], 'next' => null], 200),
+        ]);
+
+        $transactions = app(PluggyClient::class)->getTransactions('account-1', '2026-01-01', '2026-01-31');
+
+        self::assertSame(['transaction-1', 'transaction-2'], array_column($transactions, 'id'));
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'accountId=account-1')
+            && str_contains($request->url(), 'dateFrom=2026-01-01')
+            && str_contains($request->url(), 'dateTo=2026-01-31'));
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'after=cursor-2'));
+    }
 }

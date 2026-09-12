@@ -200,6 +200,7 @@ class Slice5Repository implements Slice5RepositoryInterface
         $start = Carbon::createFromFormat('!Y-m', $month)->startOfMonth();
 
         return Transaction::query()
+            ->includedInTotals()
             ->whereIn('wallet_id', $walletIds)
             ->whereBetween('competence_date', [$start->toDateString(), $start->copy()->addMonth()->subDay()->toDateString()])
             ->get();

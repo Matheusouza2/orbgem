@@ -90,7 +90,7 @@ class TransactionRepository implements TransactionRepositoryInterface
     public function totalsForMonth(MonthlySummaryDTO $summary): array
     {
         [$start, $end] = $this->monthBounds($summary->month);
-        $rows = Transaction::query()->where('wallet_id', $summary->walletId)->where('competence_date', '>=', $start)->where('competence_date', '<', $end)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
+        $rows = Transaction::query()->includedInTotals()->where('wallet_id', $summary->walletId)->where('competence_date', '>=', $start)->where('competence_date', '<', $end)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
 
         return ['actual_expenses' => $rows->where('type', 'EXPENSE')->where('status', TransactionStatus::POSTED)->sum('amount'), 'forecast_expenses' => $rows->where('type', 'EXPENSE')->sum('amount'), 'actual_income' => $rows->where('type', 'INCOME')->where('status', TransactionStatus::POSTED)->sum('amount'), 'forecast_income' => $rows->where('type', 'INCOME')->sum('amount')];
     }

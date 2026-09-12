@@ -248,6 +248,6 @@ class Slice5Service
 
     private function walletBalance(array $walletIds): int
     {
-        return (int) $this->repository->accountsForWallets($walletIds)->sum(fn ($account): int => $account->initial_balance + $this->transactions->postedAmountsForAccount($account->id)->sum(fn ($transaction): int => $transaction->effect === TransactionEffect::CREDIT ? $transaction->amount : ($transaction->effect === TransactionEffect::DEBIT ? -$transaction->amount : 0)));
+        return (int) $this->repository->accountsForWallets($walletIds)->where('ignore_in_totals', false)->sum(fn ($account): int => $account->initial_balance + $this->transactions->postedAmountsForAccount($account->id)->sum(fn ($transaction): int => $transaction->effect === TransactionEffect::CREDIT ? $transaction->amount : ($transaction->effect === TransactionEffect::DEBIT ? -$transaction->amount : 0)));
     }
 }

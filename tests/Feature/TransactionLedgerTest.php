@@ -51,6 +51,39 @@ class TransactionLedgerTest extends TestCase
         $summary->assertOk()->assertJsonPath('data.balance', 13000)->assertJsonPath('data.actual_expenses', 2000)->assertJsonPath('data.forecast_expenses', 5000)->assertJsonPath('data.actual_income', 5000)->assertJsonPath('data.forecast_income', 5700);
     }
 
+    public function test_ignored_accounts_are_excluded_from_summary_totals_and_balance(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $includedAccount = $this->account($wallet, 1000);
+        $ignoredAccount = Account::query()->create([
+            'wallet_id' => $wallet->id,
+            'name' => 'Conta fora dos totais',
+            'type' => AccountType::CHECKING,
+            'initial_balance' => 5000,
+            'ignore_in_totals' => true,
+            'active' => true,
+        ]);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->where('user_id', $user->id)->value('id');
+
+        foreach ([[$includedAccount, TransactionType::INCOME, TransactionEffect::CREDIT, 200], [$includedAccount, TransactionType::EXPENSE, TransactionEffect::DEBIT, 100], [$ignoredAccount, TransactionType::INCOME, TransactionEffect::CREDIT, 900], [$ignoredAccount, TransactionType::EXPENSE, TransactionEffect::DEBIT, 300]] as [$account, $type, $effect, $amount]) {
+            Transaction::query()->create([
+                ...$this->payload($wallet, $account, null, $type, $effect, $amount),
+                'created_by_member_id' => $memberId,
+                'updated_by_member_id' => $memberId,
+            ]);
+        }
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/monthly-summary?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.balance', 1100)
+            ->assertJsonPath('data.actual_income', 200)
+            ->assertJsonPath('data.forecast_income', 200)
+            ->assertJsonPath('data.actual_expenses', 100)
+            ->assertJsonPath('data.forecast_expenses', 100)
+            ->assertJsonPath('data.planning_consolidated.income.realized', 200)
+            ->assertJsonPath('data.planning_consolidated.expenses.realized', 100);
+    }
+
     public function test_transaction_persists_due_date_recurrence_installment_and_automatic_posting_options(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::EDITOR);

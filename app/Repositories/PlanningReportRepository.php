@@ -17,6 +17,7 @@ class PlanningReportRepository implements PlanningReportRepositoryInterface
         $start = Carbon::createFromFormat('!Y-m', $month)->startOfMonth();
         $end = $start->copy()->addMonth();
         $rows = Transaction::query()
+            ->includedInTotals()
             ->where('wallet_id', $walletId)
             ->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])
             ->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])
@@ -27,7 +28,7 @@ class PlanningReportRepository implements PlanningReportRepositoryInterface
         $commitments = FinancialCommitment::query()->where('wallet_id', $walletId)->where('active', true)->whereDate('end_date', '>=', $start)->sum('installment_amount');
         $budgetRows = Budget::query()->where('wallet_id', $walletId)->where('reference_month', $month)->where('active', true)->get();
         $budgetTotal = (int) $budgetRows->sum('amount');
-        $budgetConsumed = (int) Transaction::query()->where('wallet_id', $walletId)->where('type', TransactionType::EXPENSE)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])->whereIn('category_id', $budgetRows->pluck('category_id'))->sum('amount');
+        $budgetConsumed = (int) Transaction::query()->includedInTotals()->where('wallet_id', $walletId)->where('type', TransactionType::EXPENSE)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])->whereIn('category_id', $budgetRows->pluck('category_id'))->sum('amount');
 
         $realizedExpenses = (int) $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::POSTED)->sum('amount');
         $projectedExpenses = (int) $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::PROJECTED)->sum('amount');

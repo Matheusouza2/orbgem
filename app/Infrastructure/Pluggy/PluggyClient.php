@@ -64,10 +64,10 @@ class PluggyClient
     /** @return array<int, array<string, mixed>> */
     public function getTransactions(string $accountId, ?string $from = null, ?string $to = null): array
     {
-        return $this->paginated('/transactions', array_filter([
+        return $this->cursorPaginated('/v2/transactions', array_filter([
             'accountId' => $accountId,
-            'from' => $from,
-            'to' => $to,
+            'dateFrom' => $from,
+            'dateTo' => $to,
         ], static fn (mixed $value): bool => $value !== null));
     }
 
@@ -121,6 +121,40 @@ class PluggyClient
         } while ($hasNext);
 
         return $all;
+    }
+
+    /** @param array<string, mixed> $query @return array<int, array<string, mixed>> */
+    private function cursorPaginated(string $path, array $query): array
+    {
+        $all = [];
+        $cursor = null;
+
+        do {
+            $requestQuery = $query;
+            if ($cursor !== null) {
+                $requestQuery['after'] = $cursor;
+            }
+
+            $data = $this->decode($this->send(fn (PendingRequest $request): Response => $request->get($path, $requestQuery)));
+            $results = is_array($data['results'] ?? null) ? $data['results'] : [];
+            $all = [...$all, ...$results];
+            $cursor = $this->nextCursor($data['next'] ?? null);
+        } while ($cursor !== null);
+
+        return $all;
+    }
+
+    private function nextCursor(mixed $next): ?string
+    {
+        if (! is_string($next) || $next === '') {
+            return null;
+        }
+
+        parse_str(ltrim($next, '?&'), $parameters);
+
+        return isset($parameters['after']) && is_string($parameters['after'])
+            ? $parameters['after']
+            : $next;
     }
 
     private function request(?string $apiKey = null): PendingRequest
