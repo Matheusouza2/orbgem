@@ -7,6 +7,7 @@ x-app-environment: &app-environment
   APP_ENV: production
   APP_DEBUG: "false"
   DB_CONNECTION: mariadb
+  DB_HOST: ${DB_HOST:-host.docker.internal}
   REDIS_CLIENT: phpredis
   REDIS_HOST: redis
   REDIS_PORT: 6379
@@ -27,6 +28,8 @@ services:
     environment:
       <<: *app-environment
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
     depends_on:
@@ -40,6 +43,8 @@ services:
       - .env
     environment:
       <<: *app-environment
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--timeout=90", "--max-time=3600"]
     depends_on:
       redis:
@@ -52,6 +57,8 @@ services:
       - .env
     environment:
       <<: *app-environment
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: ["php", "artisan", "schedule:work"]
     depends_on:
       redis:
@@ -64,6 +71,8 @@ services:
       - .env
     environment:
       <<: *app-environment
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     ports:
       - "127.0.0.1:${REVERB_BIND_PORT:-8080}:8080"
