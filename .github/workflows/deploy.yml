@@ -87,7 +87,7 @@ jobs:
             -p "$SERVER_PORT" \
             -o StrictHostKeyChecking=no \
             "$SERVER_USER@$SERVER_HOST" \
-            'mkdir -p /var/www/webapps/orbgem.com.br'
+            'set -eu; deploy_path=/var/www/webapps/orbgem.com.br; sudo -n install -d -m 755 -o "$(id -u)" -g "$(id -g)" "$deploy_path"; if [ -e "$deploy_path/docker-compose.production.yml" ]; then sudo -n chown "$(id -u):$(id -g)" "$deploy_path/docker-compose.production.yml"; fi'
 
       - name: Upload production Compose file
         shell: bash
