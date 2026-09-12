@@ -1,9 +1,10 @@
 #!/bin/sh
 set -eu
 
+mkdir -p storage/app/private storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache
 chmod -R a+rwX storage bootstrap/cache
 
-if [ ! -f vendor/autoload.php ]; then
+if [ ! -f vendor/autoload.php ] || [ composer.lock -nt vendor/composer/installed.php ]; then
     composer install --no-interaction --no-progress --prefer-dist
 fi
 

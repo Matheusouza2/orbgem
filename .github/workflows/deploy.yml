@@ -119,10 +119,10 @@ jobs:
             -p "$SERVER_PORT" \
             -o StrictHostKeyChecking=no \
             "$SERVER_USER@$SERVER_HOST" \
-            "docker login --username '$DOCKERHUB_USERNAME' --password-stdin"
+            "sudo -n docker login --username '$DOCKERHUB_USERNAME' --password-stdin"
 
           ssh -i "$SSH_KEY_FILE" \
             -p "$SERVER_PORT" \
             -o StrictHostKeyChecking=no \
             "$SERVER_USER@$SERVER_HOST" \
-            "set -eu; cd /var/www/webapps/orbgem.com.br; test -f .env; export IMAGE_TAG='$IMAGE_TAG'; docker compose -f docker-compose.production.yml config --quiet; docker compose -f docker-compose.production.yml pull; docker compose -f docker-compose.production.yml up -d --remove-orphans; docker compose -f docker-compose.production.yml ps"
+            "set -eu; cd /var/www/webapps/orbgem.com.br; test -f .env; export IMAGE_TAG='$IMAGE_TAG'; sudo -n docker compose -f docker-compose.production.yml config --quiet; sudo -n docker compose -f docker-compose.production.yml pull; sudo -n docker compose -f docker-compose.production.yml up -d --remove-orphans; sudo -n docker compose -f docker-compose.production.yml ps"
