@@ -30,6 +30,17 @@ export default function InputFlatpickr({
 
     const maskRef = useRef(null);
     const fpInstanceRef = useRef(null); // guarda a instância do Flatpickr para poder chamar .clear()
+    const calendarMouseDownRef = useRef(null);
+
+    const detachCalendarMouseDown = () => {
+        const { calendar, handler } = calendarMouseDownRef.current ?? {};
+
+        if (calendar && handler) {
+            calendar.removeEventListener("mousedown", handler);
+        }
+
+        calendarMouseDownRef.current = null;
+    };
 
     // Modo controlado externamente (ex: TableFilter via onChange)
     const isControlled = typeof userOnChange === "function";
@@ -116,6 +127,18 @@ export default function InputFlatpickr({
                 }}
                 onReady={(_, __, instance) => {
                     fpInstanceRef.current = instance; // salva a instância assim que o calendário estiver pronto
+
+                    detachCalendarMouseDown();
+
+                    // O Modal do Flowbite usa mousedown para detectar cliques externos.
+                    // O calendário pode ser montado fora do conteúdo do modal pelo Flatpickr,
+                    // então esse evento não pode alcançar o listener de dismiss do modal.
+                    const calendar = instance.calendarContainer;
+                    if (calendar) {
+                        const handler = (event) => event.stopPropagation();
+                        calendar.addEventListener("mousedown", handler);
+                        calendarMouseDownRef.current = { calendar, handler };
+                    }
 
                     const input = instance.altInput;
                     if (!input) return;
@@ -206,6 +229,7 @@ export default function InputFlatpickr({
                     }
                 }}
                 onDestroy={() => {
+                    detachCalendarMouseDown();
                     maskRef.current?.destroy();
                     fpInstanceRef.current = null;
                 }}

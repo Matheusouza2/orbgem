@@ -33,12 +33,7 @@ const navigationItems = [
 
 function OrbitMark() {
     return <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orbital-primary-light text-orbital-primary" aria-hidden="true">
-        <svg className="h-7 w-7" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="3" fill="currentColor" />
-            <ellipse cx="16" cy="16" rx="12" ry="5" stroke="currentColor" strokeWidth="1.4" transform="rotate(-28 16 16)" />
-            <ellipse cx="16" cy="16" rx="12" ry="5" stroke="#F4B321" strokeWidth="1.4" transform="rotate(55 16 16)" />
-            <circle cx="25" cy="11" r="1.5" fill="#F4B321" />
-        </svg>
+        <img src="/images/icon.png" alt="" className="h-8 w-8 object-contain" />
     </span>;
 }
 

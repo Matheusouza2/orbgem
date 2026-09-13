@@ -225,6 +225,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .wallet-modal .wallet-modal__footer { background: var(--orbital-background); border-radius: 0 0 1.25rem 1.25rem; border-top: 1px solid var(--orbital-border); gap: .65rem; padding: 1rem 1.5rem; }
 .wallet-modal__submit { box-shadow: 0 6px 14px rgb(18 59 143 / 18%); }
 .wallet-modal__cancel { border: 1px solid var(--orbital-border) !important; }
+.goal-contribution-modal__goal { background: var(--orbital-primary-light); border: 1px solid rgb(18 59 143 / 13%); border-radius: .9rem; display: grid; gap: .2rem; padding: .8rem .9rem; }
+.goal-contribution-modal__goal span { color: var(--orbital-primary); font-size: .65rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.goal-contribution-modal__goal strong { color: var(--orbital-primary-dark); font-size: .95rem; }
+.generate-recurring-modal__recurrence { background: var(--orbital-primary-light); border: 1px solid rgb(18 59 143 / 13%); border-radius: .9rem; display: grid; gap: .2rem; padding: .8rem .9rem; }
+.generate-recurring-modal__recurrence span { color: var(--orbital-primary); font-size: .65rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.generate-recurring-modal__recurrence strong { color: var(--orbital-primary-dark); font-size: .95rem; }
+.generate-recurring-modal__recurrence small { color: var(--orbital-text-secondary); font-size: .72rem; margin-top: .15rem; }
+.investment-content-modal__body { max-height: calc(100vh - 12rem); min-width: 0; overflow-x: hidden !important; overflow-y: auto !important; }
+.transactions-history-modal .transactions-history-modal__body { max-height: calc(100vh - 12rem); min-width: 0; overflow-x: hidden; overflow-y: auto; }
+.transactions-history-modal__intro { margin-bottom: 1.35rem; }
+.transactions-history-modal__filters { align-items: end; background: var(--orbital-background); border: 1px solid var(--orbital-border); border-radius: .9rem; display: grid; gap: .8rem; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 1.25rem; padding: .9rem; }
+.transactions-history-modal__filters > div:last-child { padding-bottom: .2rem; }
+.transactions-history-modal__body .ledger-state,
+.transactions-history-modal__body .ledger-empty { min-height: 12rem; }
+@media (max-width: 640px) {
+    .transactions-history-modal .transactions-history-modal__body { max-height: calc(100vh - 10rem); }
+    .transactions-history-modal__filters { grid-template-columns: 1fr; }
+}
 @media (max-width: 640px) {
     .orbital-category-modal .category-modal__header,
     .orbital-category-modal .category-modal__body { padding: 1.1rem; }

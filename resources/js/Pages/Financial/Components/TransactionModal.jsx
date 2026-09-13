@@ -33,7 +33,9 @@ export default function TransactionModal({ open, onClose, form, accounts, credit
         }
     }, [open]);
 
-    const continueToPlanning = () => {
+    const continueToPlanning = (event) => {
+        event?.preventDefault();
+
         if (!form.data.description || !form.data.amount || (!creditCardSelected && !form.data.account_id) || (creditCardSelected && !form.data.credit_card_id)) {
             setStepError('Preencha descrição, valor e o meio onde o lançamento será registrado.');
             return;
@@ -43,8 +45,9 @@ export default function TransactionModal({ open, onClose, form, accounts, credit
     };
 
     const handleSubmit = (event) => {
+        event.preventDefault();
+
         if (step === 1) {
-            event.preventDefault();
             continueToPlanning();
             return;
         }
