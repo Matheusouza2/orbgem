@@ -26,7 +26,7 @@ interface TransactionRepositoryInterface
 
     public function totalsForMonth(MonthlySummaryDTO $summary): array;
 
-    public function postedAmountsForAccount(int $accountId): Collection;
+    public function postedAmountsForAccount(int $accountId, bool $includeThirdParty = true): Collection;
 
     public function recurringOccurrenceExists(int $recurringId, string $date): bool;
 

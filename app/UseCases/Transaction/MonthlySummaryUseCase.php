@@ -26,8 +26,8 @@ class MonthlySummaryUseCase
         }
         $this->membershipAuthorization->authorize($user, $wallet, WalletMemberRole::VIEWER, WalletMemberRole::EDITOR, WalletMemberRole::OWNER);
         $summary = $this->transactionService->monthlyTotals($summaryDTO);
-        $balance = $this->accountService->listForWallet($summaryDTO->walletId)->where('ignore_in_totals', false)->sum(fn ($account): int => $this->balanceCalculator->calculate($account->initial_balance, $this->transactionService->postedAmountsForAccount($account->id)));
+        $balance = $this->accountService->listForWallet($summaryDTO->walletId)->where('ignore_in_totals', false)->sum(fn ($account): int => $this->balanceCalculator->calculate($account->initial_balance, $this->transactionService->postedAmountsForAccount($account->id, $summaryDTO->includeThirdParty)));
 
-        return ['wallet_id' => $summaryDTO->walletId, 'month' => $summaryDTO->month, 'balance' => $balance, ...$summary, ...$this->planningReportService->summary($summaryDTO->walletId, $summaryDTO->month)];
+        return ['wallet_id' => $summaryDTO->walletId, 'month' => $summaryDTO->month, 'balance' => $balance, ...$summary, ...$this->planningReportService->summary($summaryDTO->walletId, $summaryDTO->month, $summaryDTO->includeThirdParty)];
     }
 }

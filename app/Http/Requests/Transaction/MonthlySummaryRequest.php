@@ -13,6 +13,6 @@ class MonthlySummaryRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['wallet_id' => ['required', 'integer', 'exists:wallets,id'], 'month' => ['required', 'date_format:Y-m']];
+        return ['wallet_id' => ['required', 'integer', 'exists:wallets,id'], 'month' => ['required', 'date_format:Y-m'], 'include_third_party' => ['sometimes', 'boolean']];
     }
 }

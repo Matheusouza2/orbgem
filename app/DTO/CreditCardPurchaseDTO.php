@@ -4,11 +4,11 @@ namespace App\DTO;
 
 final readonly class CreditCardPurchaseDTO
 {
-    public function __construct(public int $walletId, public int $creditCardId, public ?int $categoryId, public ?int $merchantId, public string $description, public string $purchaseDate, public int $totalAmount, public int $installmentCount, public int $memberId) {}
+    public function __construct(public int $walletId, public int $creditCardId, public ?int $categoryId, public ?int $merchantId, public string $description, public string $purchaseDate, public int $totalAmount, public int $installmentCount, public bool $isThirdParty, public int $memberId) {}
 
     public static function fromArray(array $a, int $memberId): self
     {
-        return new self($a['wallet_id'], $a['credit_card_id'], $a['category_id'] ?? null, $a['merchant_id'] ?? null, $a['description'], $a['purchase_date'], $a['total_amount'], $a['installment_count'], $memberId);
+        return new self($a['wallet_id'], $a['credit_card_id'], $a['category_id'] ?? null, $a['merchant_id'] ?? null, $a['description'], $a['purchase_date'], $a['total_amount'], $a['installment_count'], (bool) ($a['is_third_party'] ?? false), $memberId);
     }
 
     public function toArray(): array

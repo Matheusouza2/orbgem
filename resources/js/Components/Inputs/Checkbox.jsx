@@ -1,6 +1,6 @@
 import { Checkbox as FlowbiteCheckbox, HelperText, Label } from 'flowbite-react';
 
-export default function Checkbox({ name, label, value, setData, errors, className = '' }) {
+export default function Checkbox({ name, label, value, setData, onChange, errors, className = '' }) {
     const errorMessage = errors?.[name];
 
     return <div className={className}>
@@ -9,7 +9,7 @@ export default function Checkbox({ name, label, value, setData, errors, classNam
                 id={name}
                 name={name}
                 checked={Boolean(value)}
-                onChange={(event) => setData(name, event.target.checked)}
+                onChange={(event) => onChange ? onChange(event.target.checked) : setData(name, event.target.checked)}
                 color={errorMessage ? 'failure' : 'blue'}
             />
             <span>

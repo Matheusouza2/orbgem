@@ -31,6 +31,7 @@ export default function Transactions() {
                     <Inputs.Select name="wallet_id" label="Carteira" value={walletOptions.find((wallet) => wallet.value === String(transactions.selectedWalletId)) ?? null} onChange={(option) => transactions.selectWallet(option?.value ?? '')} options={walletOptions} isClearable={false} isDisabled={transactions.loading} className="min-w-52" />
                     <Inputs.Select name="account_id" label="Conta" value={accountOptions.find((account) => account.value === String(transactions.selectedAccountId)) ?? null} onChange={(option) => transactions.selectAccount(option?.value ?? '')} options={accountOptions} isClearable className="min-w-52" isDisabled={!transactions.selectedWalletId || transactions.loading} />
                     <Inputs.Flatpickr name="month" label="Competência" value={transactions.month} onChange={(_, dateString) => dateString && transactions.setMonth(dateString)} monthYearOnly className="min-w-40" />
+                    <Inputs.Checkbox name="include_third_party" label="Incluir despesas de terceiros" value={transactions.includeThirdParty} onChange={transactions.setIncludeThirdParty} />
                 </Suspense>
                     <Button color="blue" onClick={() => setTransactionModalOpen(true)} disabled={!transactions.selectedWalletId}><Plus className="mr-2 h-4 w-4" aria-hidden="true" />Nova transação</Button>
                 </div>
@@ -48,7 +49,7 @@ export default function Transactions() {
         </div>
 
         <MerchantModal open={transactions.merchantOpen} onClose={() => transactions.setMerchantOpen(false)} form={transactions.merchantForm} onSubmit={transactions.submitMerchant} submitting={transactions.action === 'merchant'} errors={transactions.merchantErrors} />
-        <TransactionModal open={transactionModalOpen} onClose={() => setTransactionModalOpen(false)} form={transactions.form} accounts={transactions.accounts} categories={transactions.categories} merchants={transactions.merchants} onSubmit={async (event) => { const requestError = await transactions.submitTransaction(event); if (!requestError) setTransactionModalOpen(false); }} onCreateMerchant={() => transactions.setMerchantOpen(true)} submitting={transactions.submitting} apiErrors={transactions.apiErrors} />
+        <TransactionModal open={transactionModalOpen} onClose={() => setTransactionModalOpen(false)} form={transactions.form} accounts={transactions.accounts} creditCards={transactions.creditCards} categories={transactions.categories} merchants={transactions.merchants} onSubmit={async (event) => { const requestError = await transactions.submitTransaction(event); if (!requestError) setTransactionModalOpen(false); }} onCreateMerchant={() => transactions.setMerchantOpen(true)} submitting={transactions.submitting} apiErrors={transactions.apiErrors} />
         <ReversalConfirmModal transaction={transactions.reversalTransaction} open={Boolean(transactions.reversalTransaction)} onClose={() => transactions.setReversalTransaction(null)} form={transactions.reversalForm} onSubmit={transactions.confirmReversal} submitting={transactions.action === 'reversal'} errors={transactions.reversalErrors} />
     </AppLayout>;
 }

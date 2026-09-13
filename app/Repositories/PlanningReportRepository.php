@@ -12,12 +12,13 @@ use Illuminate\Support\Carbon;
 
 class PlanningReportRepository implements PlanningReportRepositoryInterface
 {
-    public function summary(int $walletId, string $month): array
+    public function summary(int $walletId, string $month, bool $includeThirdParty = true): array
     {
         $start = Carbon::createFromFormat('!Y-m', $month)->startOfMonth();
         $end = $start->copy()->addMonth();
         $rows = Transaction::query()
             ->includedInTotals()
+            ->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->where('wallet_id', $walletId)
             ->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])
             ->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])
@@ -28,7 +29,7 @@ class PlanningReportRepository implements PlanningReportRepositoryInterface
         $commitments = FinancialCommitment::query()->where('wallet_id', $walletId)->where('active', true)->whereDate('end_date', '>=', $start)->sum('installment_amount');
         $budgetRows = Budget::query()->where('wallet_id', $walletId)->where('reference_month', $month)->where('active', true)->get();
         $budgetTotal = (int) $budgetRows->sum('amount');
-        $budgetConsumed = (int) Transaction::query()->includedInTotals()->where('wallet_id', $walletId)->where('type', TransactionType::EXPENSE)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])->whereIn('category_id', $budgetRows->pluck('category_id'))->sum('amount');
+        $budgetConsumed = (int) Transaction::query()->includedInTotals()->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $walletId)->where('type', TransactionType::EXPENSE)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])->whereIn('category_id', $budgetRows->pluck('category_id'))->sum('amount');
 
         $realizedExpenses = (int) $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::POSTED)->sum('amount');
         $projectedExpenses = (int) $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::PROJECTED)->sum('amount');

@@ -51,6 +51,46 @@ class TransactionLedgerTest extends TestCase
         $summary->assertOk()->assertJsonPath('data.balance', 13000)->assertJsonPath('data.actual_expenses', 2000)->assertJsonPath('data.forecast_expenses', 5000)->assertJsonPath('data.actual_income', 5000)->assertJsonPath('data.forecast_income', 5700);
     }
 
+    public function test_third_party_expenses_can_be_excluded_from_monthly_summary(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $account = $this->account($wallet);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->where('user_id', $user->id)->value('id');
+
+        Transaction::query()->create([
+            ...$this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, 1000),
+            'is_third_party' => true,
+            'created_by_member_id' => $memberId,
+            'updated_by_member_id' => $memberId,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/monthly-summary?wallet_id='.$wallet->id.'&month=2026-09&include_third_party=0')
+            ->assertOk()
+            ->assertJsonPath('data.actual_expenses', 0)
+            ->assertJsonPath('data.forecast_expenses', 0);
+    }
+
+    public function test_account_transactions_can_hide_third_party_expenses(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $account = $this->account($wallet);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->where('user_id', $user->id)->value('id');
+
+        foreach ([false, true] as $isThirdParty) {
+            Transaction::query()->create([
+                ...$this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, $isThirdParty ? 200 : 100),
+                'is_third_party' => $isThirdParty,
+                'created_by_member_id' => $memberId,
+                'updated_by_member_id' => $memberId,
+            ]);
+        }
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/transactions?wallet_id='.$wallet->id.'&account_id='.$account->id.'&include_third_party=0');
+
+        $response->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.amount', 100);
+    }
+
     public function test_ignored_accounts_are_excluded_from_summary_totals_and_balance(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);

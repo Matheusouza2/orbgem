@@ -31,6 +31,7 @@ class ListTransactionRequest extends FormRequest
             'transaction_date_to' => ['nullable', 'date', 'after_or_equal:transaction_date_from'],
             'competence_date_from' => ['nullable', 'date'],
             'competence_date_to' => ['nullable', 'date', 'after_or_equal:competence_date_from'],
+            'include_third_party' => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -22,6 +22,7 @@ class CreditCardTransactionResource extends JsonResource
             'transaction_date' => $this->transaction_date?->toDateString(),
             'competence_date' => $this->competence_date?->toDateString(),
             'due_date' => $this->due_date?->toDateString(),
+            'is_third_party' => (bool) $this->is_third_party,
             'source' => $externalTransaction?->source ?? 'internal',
             'installment' => $this->installment === null ? null : [
                 'number' => $this->installment->number,

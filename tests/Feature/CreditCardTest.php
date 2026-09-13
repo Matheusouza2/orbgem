@@ -133,6 +133,34 @@ class CreditCardTest extends TestCase
             ->assertJsonFragment(['description' => 'Compra (1/1)']);
     }
 
+    public function test_card_transactions_can_hide_third_party_expenses(): void
+    {
+        [$user, $wallet, $member] = $this->walletWithMember(WalletMemberRole::EDITOR);
+        $card = $this->creditCard($wallet);
+        $this->createPurchase($user, $wallet, $card);
+
+        Transaction::query()->create([
+            'wallet_id' => $wallet->id,
+            'description' => 'Despesa de terceiro',
+            'type' => TransactionType::EXPENSE,
+            'effect' => TransactionEffect::NONE,
+            'amount' => 2500,
+            'financial_instrument_type' => FinancialInstrumentType::CREDIT_CARD,
+            'transaction_date' => '2026-09-12',
+            'competence_date' => '2026-09-01',
+            'due_date' => '2026-10-05',
+            'status' => TransactionStatus::PROJECTED,
+            'is_third_party' => true,
+            'created_by_member_id' => $member->id,
+            'updated_by_member_id' => $member->id,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards/'.$card->id.'/transactions?wallet_id='.$wallet->id.'&month=2026-09&include_third_party=0')
+            ->assertOk()
+            ->assertJsonMissing(['description' => 'Despesa de terceiro']);
+    }
+
     public function test_invoice_can_close_and_mark_its_pending_installments_as_invoiced(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);

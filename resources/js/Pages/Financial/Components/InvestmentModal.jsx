@@ -14,8 +14,14 @@ const typeOptions = [
 
 export default function InvestmentModal({ open, onClose, form, wallets, onSubmit, submitting, errors, editing, onLookupQuote, quoteLoading, quoteMessage }) {
     return <Modal show={open} onClose={onClose} dismissible={!submitting} size="xl" className="wallet-modal">
-        <ModalHeader><span className="flex items-center gap-3"><TrendingUp className="h-5 w-5 text-orbital-primary" aria-hidden="true" />{editing ? 'Editar investimento' : 'Novo investimento'}</span></ModalHeader>
-        <form onSubmit={onSubmit}><ModalBody><Suspense fallback={<div className="h-80" aria-hidden="true" />}>
+        <ModalHeader className="wallet-modal__header">
+            <span className="wallet-modal__mark"><TrendingUp className="h-5 w-5" aria-hidden="true" /></span>
+            <span className="wallet-modal__heading">
+                <span className="wallet-modal__eyebrow">{editing ? 'Atualize sua posição' : 'Construção de patrimônio'}</span>
+                <span className="wallet-modal__title">{editing ? 'Editar investimento' : 'Novo investimento'}</span>
+            </span>
+        </ModalHeader>
+        <form onSubmit={onSubmit}><ModalBody className="wallet-modal__body"><div className="wallet-modal__intro"><div><p className="wallet-modal__kicker">Registre uma posição com clareza</p><p className="wallet-modal__description">Acompanhe seus ativos, valores e evolução em um só lugar.</p></div></div><Suspense fallback={<div className="h-80" aria-hidden="true" />}>
             <Inputs.ErrorSummary errors={errors} />
             <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2"><Inputs.Validation name="name" label="Nome do investimento" value={form.data.name} setData={form.setData} errors={errors} placeholder="Ex.: Tesouro Selic 2029" required autoFocus /></div>
@@ -31,6 +37,6 @@ export default function InvestmentModal({ open, onClose, form, wallets, onSubmit
                 <Inputs.Checkbox name="active" label="Investimento ativo" value={form.data.active} setData={form.setData} errors={errors} />
                 <div className="sm:col-span-2 rounded-xl border border-orbital-border bg-orbital-background p-4"><Inputs.Checkbox name="cdi_linked" label="Vincular rendimento ao CDI" value={form.data.cdi_linked} setData={form.setData} errors={errors} /><p className="mt-1 text-xs leading-5 text-orbital-text-secondary">O valor será atualizado diariamente usando a taxa CDI disponível.</p>{form.data.cdi_linked && <div className="mt-4 max-w-xs"><Inputs.Number name="cdi_percentage" label="Percentual do CDI (%)" value={form.data.cdi_percentage} setData={form.setData} errors={errors} format="decimal" maxDigits={4} required /><p className="mt-1 text-xs text-orbital-text-secondary">Ex.: 100, 102 ou 110.</p></div>}</div>
             </div>
-        </Suspense></ModalBody><ModalFooter><Button type="button" color="light" onClick={onClose} disabled={submitting}>Cancelar</Button><Button type="submit" color="blue" disabled={submitting}>{submitting ? 'Salvando…' : 'Salvar investimento'}</Button></ModalFooter></form>
+        </Suspense></ModalBody><ModalFooter className="wallet-modal__footer"><Button type="button" color="light" onClick={onClose} disabled={submitting}>Cancelar</Button><Button type="submit" color="blue" disabled={submitting}>{submitting ? 'Salvando…' : 'Salvar investimento'}</Button></ModalFooter></form>
     </Modal>;
 }

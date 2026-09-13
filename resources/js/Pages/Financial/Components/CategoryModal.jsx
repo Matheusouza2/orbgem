@@ -20,12 +20,12 @@ export default function CategoryModal({ open, onClose, form, categories, selecte
     const categoryType = form.data.type === 'INCOME' ? 'Receita' : 'Despesa';
     const PreviewIcon = FINANCIAL_ICON_OPTIONS.find((option) => option.id === form.data.icon)?.Icon ?? Tag;
 
-    return <Modal show={open} onClose={onClose} dismissible={!submitting} size="xl" className="orbital-category-modal">
-        <ModalHeader className="category-modal__header">
-            <span className="category-modal__mark"><Tag className="h-5 w-5" aria-hidden="true" /></span>
-            <span className="category-modal__heading">
-                <span className="category-modal__eyebrow">{editing ? 'Atualize sua organização' : 'Organização financeira'}</span>
-                <span className="category-modal__title">{editing ? 'Editar categoria' : 'Nova categoria'}</span>
+    return <Modal show={open} onClose={onClose} dismissible={!submitting} size="xl" className="orbital-category-modal wallet-modal">
+        <ModalHeader className="wallet-modal__header">
+            <span className="wallet-modal__mark"><Tag className="h-5 w-5" aria-hidden="true" /></span>
+            <span className="wallet-modal__heading">
+                <span className="wallet-modal__eyebrow">{editing ? 'Atualize sua organização' : 'Organização financeira'}</span>
+                <span className="wallet-modal__title">{editing ? 'Editar categoria' : 'Nova categoria'}</span>
             </span>
         </ModalHeader>
         <form onSubmit={onSubmit}>

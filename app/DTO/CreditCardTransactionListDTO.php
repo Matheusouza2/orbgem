@@ -13,6 +13,7 @@ final readonly class CreditCardTransactionListDTO
         public ?TransactionStatus $status,
         public int $page,
         public int $perPage,
+        public bool $includeThirdParty = true,
     ) {}
 
     /** @param array<string, mixed> $attributes */
@@ -25,6 +26,7 @@ final readonly class CreditCardTransactionListDTO
             status: isset($attributes['status']) ? TransactionStatus::from($attributes['status']) : null,
             page: (int) ($attributes['page'] ?? 1),
             perPage: (int) ($attributes['per_page'] ?? 25),
+            includeThirdParty: (bool) ($attributes['include_third_party'] ?? true),
         );
     }
 }

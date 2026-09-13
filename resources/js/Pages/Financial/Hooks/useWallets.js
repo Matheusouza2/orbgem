@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import Account from '@/Models/Account';
+import Transaction from '@/Models/Transaction';
 import Wallet from '@/Models/Wallet';
 import FinancialService from '@/Services/FinancialService';
 
@@ -19,8 +20,21 @@ export default function useWallets() {
     const [selectedWalletForAccount, setSelectedWalletForAccount] = useState(null);
     const [accountErrors, setAccountErrors] = useState({});
     const [accountSubmitting, setAccountSubmitting] = useState(false);
+    const [transactionModalOpen, setTransactionModalOpen] = useState(false);
+    const [transactionCategories, setTransactionCategories] = useState([]);
+    const [transactionMerchants, setTransactionMerchants] = useState([]);
+    const [transactionErrors, setTransactionErrors] = useState({});
+    const [transactionSubmitting, setTransactionSubmitting] = useState(false);
+    const [selectedAccountForTransaction, setSelectedAccountForTransaction] = useState(null);
+    const [accountTransactions, setAccountTransactions] = useState([]);
+    const [accountTransactionsMeta, setAccountTransactionsMeta] = useState(null);
+    const [accountTransactionsLoading, setAccountTransactionsLoading] = useState(false);
+    const [accountTransactionsError, setAccountTransactionsError] = useState('');
+    const [accountTransactionsFilters, setAccountTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', page: 1, include_third_party: true });
+    const [selectedAccountForTransactions, setSelectedAccountForTransactions] = useState(null);
     const form = useForm({ ...Wallet });
     const accountForm = useForm({ ...Account });
+    const transactionForm = useForm({ ...Transaction });
 
     useEffect(() => {
         FinancialService.listWallets()
@@ -28,6 +42,10 @@ export default function useWallets() {
                 setWallets(availableWallets);
                 const walletAccounts = await Promise.all(availableWallets.map((wallet) => FinancialService.listAccounts(wallet.id)));
                 setAccounts(walletAccounts.flat());
+                const walletCategories = await Promise.all(availableWallets.map((wallet) => FinancialService.listCategories(wallet.id)));
+                const walletMerchants = await Promise.all(availableWallets.map((wallet) => FinancialService.listMerchants(wallet.id)));
+                setTransactionCategories(walletCategories.flat());
+                setTransactionMerchants(walletMerchants.flat());
             })
             .catch((error) => setErrors(normalizeErrors(error)))
             .finally(() => setLoading(false));
@@ -134,5 +152,95 @@ export default function useWallets() {
         }
     };
 
-    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount };
+    const openTransactionModal = (account) => {
+        setTransactionErrors({});
+        setSelectedAccountForTransaction(account);
+        transactionForm.reset();
+        transactionForm.setData({
+            ...Transaction,
+            wallet_id: account.wallet_id,
+            account_id: account.id,
+            financial_instrument_type: 'ACCOUNT',
+            transaction_date: new Date().toISOString().slice(0, 10),
+            due_date: new Date().toISOString().slice(0, 10),
+        });
+        setTransactionModalOpen(true);
+    };
+
+    const closeTransactionModal = () => {
+        if (!transactionSubmitting) setTransactionModalOpen(false);
+    };
+
+    const submitTransaction = async (event) => {
+        event.preventDefault();
+        setTransactionErrors({});
+        setTransactionSubmitting(true);
+
+        try {
+            await FinancialService.createTransaction({
+                ...transactionForm.data,
+                wallet_id: Number(selectedAccountForTransaction.wallet_id),
+                account_id: Number(selectedAccountForTransaction.id),
+                credit_card_id: null,
+                amount: Math.round(Number(transactionForm.data.amount || 0) * 100),
+                effect: transactionForm.data.type === 'INCOME' ? 'CREDIT' : 'DEBIT',
+                financial_instrument_type: 'ACCOUNT',
+            });
+            transactionForm.reset();
+            setSelectedAccountForTransaction(null);
+            setTransactionModalOpen(false);
+        } catch (error) {
+            setTransactionErrors(error?.errors ?? { general: error?.message ?? 'Não foi possível registrar o lançamento.' });
+        } finally {
+            setTransactionSubmitting(false);
+        }
+    };
+
+    const loadAccountTransactions = async (account, filters = accountTransactionsFilters) => {
+        if (!account) return;
+        setAccountTransactionsLoading(true);
+        setAccountTransactionsError('');
+
+        try {
+            const response = await FinancialService.listAccountTransactions(account.id, {
+                wallet_id: account.wallet_id,
+                month: filters.month,
+                status: filters.status,
+                include_third_party: filters.include_third_party ? '1' : '0',
+                page: filters.page,
+                per_page: 20,
+            });
+            setAccountTransactions(response.data ?? []);
+            setAccountTransactionsMeta(response.meta ?? null);
+        } catch (error) {
+            setAccountTransactionsError(error.message);
+        } finally {
+            setAccountTransactionsLoading(false);
+        }
+    };
+
+    const openAccountTransactions = (account) => {
+        const filters = { month: new Date().toISOString().slice(0, 7), status: '', page: 1, include_third_party: true };
+        setSelectedAccountForTransactions(account);
+        setAccountTransactionsFilters(filters);
+        loadAccountTransactions(account, filters);
+    };
+
+    const closeAccountTransactions = () => {
+        if (!accountTransactionsLoading) setSelectedAccountForTransactions(null);
+    };
+
+    const updateAccountTransactionsFilters = (key, value) => {
+        const filters = { ...accountTransactionsFilters, [key]: value, page: 1 };
+        setAccountTransactionsFilters(filters);
+        loadAccountTransactions(selectedAccountForTransactions, filters);
+    };
+
+    const changeAccountTransactionsPage = (page) => {
+        const filters = { ...accountTransactionsFilters, page };
+        setAccountTransactionsFilters(filters);
+        loadAccountTransactions(selectedAccountForTransactions, filters);
+    };
+
+    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedAccountForTransaction, accountTransactions, accountTransactionsMeta, accountTransactionsLoading, accountTransactionsError, accountTransactionsFilters, selectedAccountForTransactions, openAccountTransactions, closeAccountTransactions, updateAccountTransactionsFilters, changeAccountTransactionsPage };
 }

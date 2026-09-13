@@ -22,6 +22,7 @@ final readonly class TransactionListFilterDTO
         public ?string $transactionDateTo,
         public ?string $competenceDateFrom,
         public ?string $competenceDateTo,
+        public bool $includeThirdParty = true,
     ) {}
 
     /** @param array<string, mixed> $attributes */
@@ -42,6 +43,7 @@ final readonly class TransactionListFilterDTO
             transactionDateTo: $attributes['transaction_date_to'] ?? null,
             competenceDateFrom: $attributes['competence_date_from'] ?? null,
             competenceDateTo: $attributes['competence_date_to'] ?? null,
+            includeThirdParty: (bool) ($attributes['include_third_party'] ?? true),
         );
     }
 }

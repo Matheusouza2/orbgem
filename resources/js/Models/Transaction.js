@@ -1,6 +1,7 @@
 const Transaction = {
     wallet_id: null,
     account_id: null,
+    credit_card_id: null,
     category_id: null,
     merchant_id: null,
     description: '',
@@ -20,6 +21,7 @@ const Transaction = {
     status: 'POSTED',
     payment_channel: 'PIX',
     notes: '',
+    is_third_party: false,
 };
 
 export default Transaction;

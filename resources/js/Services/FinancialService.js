@@ -55,6 +55,7 @@ const FinancialService = {
     listCreditCards: async (walletId, options = {}) => (await request(`/api/v1/credit-cards?wallet_id=${walletId}`, options)).data,
     listCreditCardTransactions: async (cardId, params = {}, options = {}) => request(`/api/v1/credit-cards/${cardId}/transactions?${new URLSearchParams(params)}`, options),
     createCreditCard: async (payload, options = {}) => request('/api/v1/credit-cards', { method: 'POST', body: JSON.stringify(payload), ...options }),
+    createCreditCardPurchase: async (payload, options = {}) => request('/api/v1/credit-card-purchases', { method: 'POST', body: JSON.stringify(payload), ...options }),
     updateCreditCard: async (cardId, payload, options = {}) => request(`/api/v1/credit-cards/${cardId}`, { method: 'PUT', body: JSON.stringify(payload), ...options }),
     listMerchants: async (walletId, options = {}) => (await request(`/api/v1/merchants?wallet_id=${walletId}`, options)).data,
     listCategories: async (walletId, options = {}) => (await request(`/api/v1/categories?wallet_id=${walletId}`, options)).data,
@@ -82,7 +83,13 @@ const FinancialService = {
 
         return (await request(`/api/v1/transactions?${params}`, options)).data;
     },
-    getSummary: async (walletId, month, options = {}) => (await request(`/api/v1/monthly-summary?wallet_id=${walletId}&month=${month}`, options)).data,
+    listAccountTransactions: async (accountId, params = {}, options = {}) => request(`/api/v1/transactions?${new URLSearchParams({ account_id: accountId, ...params })}`, options),
+    getSummary: async (walletId, month, options = {}) => {
+        const { includeThirdParty = true, ...requestOptions } = options;
+        const params = new URLSearchParams({ wallet_id: walletId, month, include_third_party: includeThirdParty ? '1' : '0' });
+
+        return (await request(`/api/v1/monthly-summary?${params}`, requestOptions)).data;
+    },
     createTransaction: async (payload, options = {}) => request('/api/v1/transactions', {
         method: 'POST',
         body: JSON.stringify(payload),

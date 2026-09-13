@@ -10,9 +10,9 @@ class PlanningReportService
     public function __construct(private PlanningReportRepositoryInterface $repository) {}
 
     /** @return array<string, mixed> */
-    public function summary(int $walletId, string $month): array
+    public function summary(int $walletId, string $month, bool $includeThirdParty = true): array
     {
-        return $this->repository->summary($walletId, $month);
+        return $this->repository->summary($walletId, $month, $includeThirdParty);
     }
 
     /** @return array<string, mixed> */

@@ -15,18 +15,29 @@ import {
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
+const shiftMonth = (month, offset) => {
+    const date = new Date(`${month}-01T12:00:00`);
+    date.setMonth(date.getMonth() + offset);
+
+    return date.toISOString().slice(0, 7);
+};
+
 const toCents = (value) => Math.round(Number(value) * 100);
 
 export default function useDashboard() {
     const [wallets, setWallets] = useState([]);
     const [accounts, setAccounts] = useState([]);
+    const [creditCards, setCreditCards] = useState([]);
     const [merchants, setMerchants] = useState([]);
     const [categories, setCategories] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [summary, setSummary] = useState(emptySummary);
+    const [previousSummary, setPreviousSummary] = useState(emptySummary);
+    const [nextSummary, setNextSummary] = useState(emptySummary);
     const [selectedWalletId, setSelectedWalletId] = useState('');
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [month, setMonth] = useState(currentMonth);
+    const [includeThirdParty, setIncludeThirdParty] = useState(true);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [action, setAction] = useState(null);
@@ -66,10 +77,13 @@ export default function useDashboard() {
     useEffect(() => {
         if (!selectedWalletId) {
             setAccounts([]);
+            setCreditCards([]);
             setMerchants([]);
             setCategories([]);
             setTransactions([]);
             setSummary(emptySummary);
+            setPreviousSummary(emptySummary);
+            setNextSummary(emptySummary);
             return undefined;
         }
 
@@ -86,15 +100,19 @@ export default function useDashboard() {
 
         Promise.all([
             FinancialService.listAccounts(selectedWalletId, { signal: controller.signal }),
+            FinancialService.listCreditCards(selectedWalletId, { signal: controller.signal }),
             FinancialService.listMerchants(selectedWalletId, { signal: controller.signal }),
             FinancialService.listCategories(selectedWalletId, { signal: controller.signal }),
             FinancialService.listTransactions(selectedWalletId, selectedAccountId, month, { signal: controller.signal }),
-            FinancialService.getSummary(selectedWalletId, month, { signal: controller.signal }),
+            FinancialService.getSummary(selectedWalletId, month, { signal: controller.signal, includeThirdParty }),
+            FinancialService.getSummary(selectedWalletId, shiftMonth(month, -1), { signal: controller.signal, includeThirdParty }),
+            FinancialService.getSummary(selectedWalletId, shiftMonth(month, 1), { signal: controller.signal, includeThirdParty }),
         ])
-            .then(([availableAccounts, availableMerchants, availableCategories, availableTransactions, availableSummary]) => {
+            .then(([availableAccounts, availableCreditCards, availableMerchants, availableCategories, availableTransactions, availableSummary, availablePreviousSummary, availableNextSummary]) => {
                 if (context.id !== requestId.current || controller.signal.aborted) return;
 
                 setAccounts(availableAccounts);
+                setCreditCards(availableCreditCards);
                 setMerchants(availableMerchants);
                 setCategories(availableCategories);
                 setTransactions(availableTransactions.map((transaction) => ({
@@ -102,6 +120,8 @@ export default function useDashboard() {
                     canReverse: canReverseTransaction(transaction),
                 })));
                 setSummary(availableSummary);
+                setPreviousSummary(availablePreviousSummary);
+                setNextSummary(availableNextSummary);
             })
             .catch((requestError) => {
                 if (requestError.name !== 'AbortError' && context.id === requestId.current) {
@@ -113,20 +133,24 @@ export default function useDashboard() {
             });
 
         return () => controller.abort();
-    }, [selectedWalletId, selectedAccountId, month]);
+    }, [selectedWalletId, selectedAccountId, month, includeThirdParty]);
 
     const reload = async () => {
         if (!selectedWalletId) return;
 
-        const [availableAccounts, availableMerchants, availableCategories, availableTransactions, availableSummary] = await Promise.all([
+        const [availableAccounts, availableCreditCards, availableMerchants, availableCategories, availableTransactions, availableSummary, availablePreviousSummary, availableNextSummary] = await Promise.all([
             FinancialService.listAccounts(selectedWalletId),
+            FinancialService.listCreditCards(selectedWalletId),
             FinancialService.listMerchants(selectedWalletId),
             FinancialService.listCategories(selectedWalletId),
             FinancialService.listTransactions(selectedWalletId, selectedAccountId, month),
-            FinancialService.getSummary(selectedWalletId, month),
+            FinancialService.getSummary(selectedWalletId, month, { includeThirdParty }),
+            FinancialService.getSummary(selectedWalletId, shiftMonth(month, -1), { includeThirdParty }),
+            FinancialService.getSummary(selectedWalletId, shiftMonth(month, 1), { includeThirdParty }),
         ]);
 
         setAccounts(availableAccounts);
+        setCreditCards(availableCreditCards);
         setMerchants(availableMerchants);
         setCategories(availableCategories);
         setTransactions(availableTransactions.map((transaction) => ({
@@ -134,6 +158,8 @@ export default function useDashboard() {
             canReverse: canReverseTransaction(transaction),
         })));
         setSummary(availableSummary);
+        setPreviousSummary(availablePreviousSummary);
+        setNextSummary(availableNextSummary);
     };
 
     const runAction = async (name, operation, onSuccess) => {
@@ -158,13 +184,30 @@ export default function useDashboard() {
     const submitTransaction = async (event) => {
         event.preventDefault();
         setApiErrors({});
-        const requestError = await runAction('transaction', () => FinancialService.createTransaction({
-            ...form.data,
-            wallet_id: Number(selectedWalletId),
-            amount: toCents(form.data.amount),
-            effect: effectForType(form.data.type),
-            financial_instrument_type: 'ACCOUNT',
-        }), reload);
+        const requestError = await runAction('transaction', () => {
+            if (form.data.financial_instrument_type === 'CREDIT_CARD') {
+                return FinancialService.createCreditCardPurchase({
+                    wallet_id: Number(selectedWalletId),
+                    credit_card_id: Number(form.data.credit_card_id),
+                    category_id: form.data.category_id ? Number(form.data.category_id) : null,
+                    merchant_id: form.data.merchant_id ? Number(form.data.merchant_id) : null,
+                    description: form.data.description,
+                    purchase_date: form.data.transaction_date,
+                    total_amount: toCents(form.data.amount),
+                    installment_count: form.data.recurrence_type === 'INSTALLMENT' ? Number(form.data.installment_count) : 1,
+                });
+            }
+
+            return FinancialService.createTransaction({
+                ...form.data,
+                wallet_id: Number(selectedWalletId),
+                account_id: Number(form.data.account_id),
+                credit_card_id: null,
+                amount: toCents(form.data.amount),
+                effect: effectForType(form.data.type),
+                financial_instrument_type: 'ACCOUNT',
+            });
+        }, reload);
 
         if (requestError) setApiErrors(normalizeErrors(requestError));
         else form.reset();
@@ -223,13 +266,18 @@ export default function useDashboard() {
     return {
         wallets,
         accounts,
+        creditCards,
         merchants,
         categories,
         transactions,
         summary,
+        previousSummary,
+        nextSummary,
         selectedWalletId,
         selectedAccountId,
         month,
+        includeThirdParty,
+        setIncludeThirdParty,
         loading,
         submitting,
         action,

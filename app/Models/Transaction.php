@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['wallet_id', 'account_id', 'category_id', 'merchant_id', 'description', 'type', 'effect', 'amount', 'financial_instrument_type', 'transaction_date', 'competence_date', 'due_date', 'recurrence_type', 'installment_initial', 'installment_count', 'installment_periodicity', 'auto_post_on_due_date', 'paid_at', 'status', 'payment_channel', 'notes', 'recurring_transaction_id', 'financial_commitment_id', 'import_batch_id', 'import_row_hash', 'credit_card_invoice_id', 'installment_id', 'transfer_group_id', 'reversal_of_transaction_id', 'created_by_member_id', 'updated_by_member_id'])]
+#[Fillable(['wallet_id', 'account_id', 'category_id', 'merchant_id', 'description', 'type', 'effect', 'amount', 'financial_instrument_type', 'transaction_date', 'competence_date', 'due_date', 'recurrence_type', 'installment_initial', 'installment_count', 'installment_periodicity', 'auto_post_on_due_date', 'paid_at', 'status', 'payment_channel', 'notes', 'is_third_party', 'recurring_transaction_id', 'financial_commitment_id', 'import_batch_id', 'import_row_hash', 'credit_card_invoice_id', 'installment_id', 'transfer_group_id', 'reversal_of_transaction_id', 'created_by_member_id', 'updated_by_member_id'])]
 class Transaction extends Model
 {
     public function scopeIncludedInTotals(Builder $query): Builder
@@ -118,6 +118,7 @@ class Transaction extends Model
             'installment_count' => 'integer',
             'auto_post_on_due_date' => 'boolean',
             'paid_at' => 'datetime',
+            'is_third_party' => 'boolean',
         ];
     }
 }

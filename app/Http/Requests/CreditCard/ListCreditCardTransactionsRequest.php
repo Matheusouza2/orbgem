@@ -19,6 +19,7 @@ class ListCreditCardTransactionsRequest extends FormRequest
             'status' => ['nullable', 'string', 'in:POSTED,PROJECTED,CANCELLED'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'include_third_party' => ['sometimes', 'boolean'],
         ];
     }
 }

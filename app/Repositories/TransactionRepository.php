@@ -52,6 +52,7 @@ class TransactionRepository implements TransactionRepositoryInterface
         $query = Transaction::query()
             ->withExists('reversals')
             ->where('wallet_id', $filters->walletId)
+            ->when(! $filters->includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->orderBy($filters->sortBy, $filters->sortDirection)
             ->orderBy('id', $filters->sortDirection);
         if ($filters->accountId !== null) {
@@ -90,7 +91,7 @@ class TransactionRepository implements TransactionRepositoryInterface
     public function totalsForMonth(MonthlySummaryDTO $summary): array
     {
         [$start, $end] = $this->monthBounds($summary->month);
-        $rows = Transaction::query()->includedInTotals()->where('wallet_id', $summary->walletId)->where('competence_date', '>=', $start)->where('competence_date', '<', $end)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
+        $rows = Transaction::query()->includedInTotals()->when(! $summary->includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $summary->walletId)->where('competence_date', '>=', $start)->where('competence_date', '<', $end)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
 
         return ['actual_expenses' => $rows->where('type', 'EXPENSE')->where('status', TransactionStatus::POSTED)->sum('amount'), 'forecast_expenses' => $rows->where('type', 'EXPENSE')->sum('amount'), 'actual_income' => $rows->where('type', 'INCOME')->where('status', TransactionStatus::POSTED)->sum('amount'), 'forecast_income' => $rows->where('type', 'INCOME')->sum('amount')];
     }
@@ -103,9 +104,9 @@ class TransactionRepository implements TransactionRepositoryInterface
         return [$start->toDateString(), $start->copy()->addMonth()->toDateString()];
     }
 
-    public function postedAmountsForAccount(int $accountId): Collection
+    public function postedAmountsForAccount(int $accountId, bool $includeThirdParty = true): Collection
     {
-        return Transaction::query()->where('account_id', $accountId)->where('status', TransactionStatus::POSTED)->get(['effect', 'amount']);
+        return Transaction::query()->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('account_id', $accountId)->where('status', TransactionStatus::POSTED)->get(['effect', 'amount']);
     }
 
     public function recurringOccurrenceExists(int $recurringId, string $date): bool

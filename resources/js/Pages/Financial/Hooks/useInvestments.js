@@ -23,6 +23,9 @@ export default function useInvestments() {
     const [submitting, setSubmitting] = useState(false);
     const [quoteLoading, setQuoteLoading] = useState(false);
     const [quoteMessage, setQuoteMessage] = useState('');
+    const [positionsOpen, setPositionsOpen] = useState(false);
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [incomeOpen, setIncomeOpen] = useState(false);
     const form = useForm({ ...Investment });
 
     const loadInvestments = async (walletId) => {
@@ -141,5 +144,5 @@ export default function useInvestments() {
         try { await FinancialService.deleteInvestment(investment.id); setInvestments((current) => current.filter((item) => item.id !== investment.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 
-    return { wallets, investments: filteredInvestments, allInvestments: investments, investmentFilters, updateInvestmentFilter, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters, yieldInvestment, yields, yieldsLoading, openYields, closeYields };
+    return { wallets, investments: filteredInvestments, allInvestments: investments, investmentFilters, updateInvestmentFilter, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters, yieldInvestment, yields, yieldsLoading, openYields, closeYields, positionsOpen, setPositionsOpen, filtersOpen, setFiltersOpen, incomeOpen, setIncomeOpen };
 }
