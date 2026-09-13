@@ -43,16 +43,17 @@ class CreateCreditCardPurchaseUseCase
                 throw ValidationException::withMessages(['credit_card_id' => 'The credit card is invalid for this wallet.']);
             }
             $purchase = $this->purchases->create($dto);
-            $base = Carbon::parse($dto->purchaseDate)->startOfMonth();
-            if (Carbon::parse($dto->purchaseDate)->day > $card->closing_day) {
+            $baseDate = Carbon::parse($dto->dueDate ?? $dto->purchaseDate);
+            $base = $baseDate->copy()->startOfMonth();
+            if ($baseDate->day >= $card->closing_day) {
                 $base->addMonth();
             }
             $baseAmount = intdiv($dto->totalAmount, $dto->installmentCount);
             $remainder = $dto->totalAmount - ($baseAmount * $dto->installmentCount);
             for ($i = 0; $i < $dto->installmentCount; $i++) {
                 $reference = $base->copy()->addMonths($i);
-                $closing = $reference->copy()->endOfMonth()->day(min($card->closing_day, $reference->copy()->endOfMonth()->day));
-                $due = $reference->copy()->addMonth()->endOfMonth()->day(min($card->due_day, $reference->copy()->addMonth()->endOfMonth()->day));
+                $closing = $reference->copy()->endOfMonth()->day(min($card->closing_day, $reference->copy()->endOfMonth()->day))->startOfDay();
+                $due = $reference->copy()->endOfMonth()->day(min($card->due_day, $reference->copy()->endOfMonth()->day))->startOfDay();
                 $invoice = $this->invoices->forWallet(new CreditCardInvoiceListDTO($dto->walletId, $card->id, null))->firstWhere('reference_month', $reference->format('Y-m'));
                 if ($invoice === null) {
                     $invoice = $this->invoices->create(['wallet_id' => $dto->walletId, 'credit_card_id' => $card->id, 'reference_month' => $reference->format('Y-m'), 'closing_date' => $closing, 'due_date' => $due, 'status' => CreditCardInvoiceStatus::OPEN->value]);

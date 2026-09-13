@@ -103,6 +103,48 @@ class CreditCardTest extends TestCase
             ->assertJsonPath('data.0.limit_usage_percentage', 1);
     }
 
+    public function test_card_list_includes_the_previous_invoice_summary(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $card = CreditCard::create(['wallet_id' => $wallet->id, 'name' => 'Cartão', 'credit_limit' => 100000, 'closing_day' => 15, 'due_day' => 5, 'active' => true]);
+
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-purchases', [
+            'wallet_id' => $wallet->id, 'credit_card_id' => $card->id, 'description' => 'Compra anterior',
+            'purchase_date' => '2026-08-10', 'total_amount' => 2500, 'installment_count' => 1,
+        ])->assertCreated();
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-purchases', [
+            'wallet_id' => $wallet->id, 'credit_card_id' => $card->id, 'description' => 'Compra atual',
+            'purchase_date' => '2026-09-10', 'total_amount' => 4000, 'installment_count' => 1,
+        ])->assertCreated();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards?wallet_id='.$wallet->id)
+            ->assertOk()
+            ->assertJsonPath('data.0.current_invoice_amount', 4000)
+            ->assertJsonPath('data.0.previous_invoice_amount', 2500)
+            ->assertJsonPath('data.0.previous_invoice_reference_month', '2026-08')
+            ->assertJsonPath('data.0.previous_invoice_usage_percentage', 2.5);
+    }
+
+    public function test_purchase_uses_informed_due_date_to_select_the_invoice(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $card = CreditCard::create(['wallet_id' => $wallet->id, 'name' => 'Cartão', 'credit_limit' => 100000, 'closing_day' => 5, 'due_day' => 12, 'active' => true]);
+
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-purchases', [
+            'wallet_id' => $wallet->id, 'credit_card_id' => $card->id, 'description' => 'Compra antes do fechamento',
+            'purchase_date' => '2026-09-20', 'due_date' => '2026-09-04', 'total_amount' => 1000, 'installment_count' => 1,
+        ])->assertCreated();
+
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-purchases', [
+            'wallet_id' => $wallet->id, 'credit_card_id' => $card->id, 'description' => 'Compra depois do fechamento',
+            'purchase_date' => '2026-09-20', 'due_date' => '2026-09-07', 'total_amount' => 1000, 'installment_count' => 1,
+        ])->assertCreated();
+
+        self::assertSame('2026-09-12', CreditCardInvoice::query()->where('credit_card_id', $card->id)->where('reference_month', '2026-09')->firstOrFail()->due_date->toDateString());
+        self::assertSame('2026-10-12', CreditCardInvoice::query()->where('credit_card_id', $card->id)->where('reference_month', '2026-10')->firstOrFail()->due_date->toDateString());
+    }
+
     public function test_card_transactions_include_purchases_and_imported_pluggy_transactions(): void
     {
         [$user, $wallet, $member] = $this->walletWithMember(WalletMemberRole::EDITOR);

@@ -117,6 +117,7 @@ export default function useCreditCards() {
                 is_third_party: Boolean(transactionForm.data.is_third_party),
                 description: transactionForm.data.description,
                 purchase_date: transactionForm.data.transaction_date,
+                due_date: transactionForm.data.due_date || null,
                 total_amount: Math.round(Number(transactionForm.data.amount || 0) * 100),
                 installment_count: transactionForm.data.recurrence_type === 'INSTALLMENT' ? Number(transactionForm.data.installment_count) : 1,
             };
