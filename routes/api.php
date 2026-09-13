@@ -70,6 +70,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('/credit-cards/{creditCard}', [CreditCardController::class, 'update'])->whereNumber('creditCard');
     Route::delete('/credit-cards/{creditCard}', [CreditCardController::class, 'destroy'])->whereNumber('creditCard');
     Route::post('/credit-card-purchases', [CreditCardPurchaseController::class, 'store']);
+    Route::put('/credit-card-purchases/{purchase}', [CreditCardPurchaseController::class, 'update'])->whereNumber('purchase');
+    Route::delete('/credit-card-purchases/{purchase}', [CreditCardPurchaseController::class, 'destroy'])->whereNumber('purchase');
+    Route::put('/credit-card-transactions/{transaction}', [CreditCardPurchaseController::class, 'updateInstallment'])->whereNumber('transaction');
+    Route::delete('/credit-card-transactions/{transaction}', [CreditCardPurchaseController::class, 'destroyInstallment'])->whereNumber('transaction');
     Route::get('/credit-card-invoices', [CreditCardInvoiceController::class, 'index']);
     Route::post('/credit-card-invoices/{invoice}/close', [CreditCardInvoiceController::class, 'close'])->whereNumber('invoice');
     Route::post('/credit-card-invoices/{invoice}/payments', [CreditCardInvoiceController::class, 'pay'])->whereNumber('invoice');

@@ -14,4 +14,9 @@ class CreditCardPurchaseRepository implements CreditCardPurchaseRepositoryInterf
     {
         return CreditCardPurchase::query()->create($dto->toArray());
     }
+
+    public function lockForUpdate(int $id): ?CreditCardPurchase
+    {
+        return CreditCardPurchase::query()->lockForUpdate()->find($id);
+    }
 }

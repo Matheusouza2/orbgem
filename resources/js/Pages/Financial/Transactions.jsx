@@ -41,9 +41,8 @@ export default function Transactions() {
             {!transactions.selectedWalletId && !transactions.loading && <div className="ledger-panel mb-5" role="status">Você ainda não possui uma carteira disponível.</div>}
             {transactions.selectedWalletId && <>
                 <div className="transactions-stats"><div><span>Entradas realizadas</span><strong className="text-emerald-700">{money(transactions.summary.actual_income)}</strong><small>neste mês</small></div><div><span>Despesas realizadas</span><strong className="text-rose-700">{money(transactions.summary.actual_expenses)}</strong><small>neste mês</small></div><div><span>Despesas previstas</span><strong className="text-orbital-primary">{money(transactions.summary.forecast_expenses)}</strong><small>planejado</small></div></div>
-                <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
+                <div className="grid grid-cols-1 items-start gap-5">
                     <TransactionList transactions={transactions.transactions} loading={transactions.loading} onRequestReversal={transactions.requestReversal} onRequestEdit={transactions.requestEdit} onRequestDelete={transactions.requestDelete} />
-                    <div className="transactions-quick-add"><div className="transactions-quick-add__mark"><Plus className="h-5 w-5" aria-hidden="true" /></div><div><p className="ledger-eyebrow">Movimento novo?</p><h2 className="text-lg font-bold text-orbital-primary-dark">Adicione ao seu livro.</h2><p className="mt-1 text-sm leading-6 text-orbital-text-secondary">Entradas e saídas ficam organizadas no mesmo lugar.</p></div><Button color="blue" className="mt-4 w-full" onClick={() => setTransactionModalOpen(true)}>Abrir formulário</Button></div>
                 </div>
             </>}
         </div>

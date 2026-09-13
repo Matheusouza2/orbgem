@@ -19,4 +19,9 @@ class InstallmentRepository implements InstallmentRepositoryInterface
     {
         return Installment::query()->where('credit_card_invoice_id', $invoiceId)->where('status', 'PENDING')->lockForUpdate()->get();
     }
+
+    public function lockForPurchase(int $purchaseId): Collection
+    {
+        return Installment::query()->where('credit_card_purchase_id', $purchaseId)->orderBy('number')->lockForUpdate()->get();
+    }
 }

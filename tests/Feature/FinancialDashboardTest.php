@@ -135,6 +135,12 @@ class FinancialDashboardTest extends TestCase
         $this->assertStringContainsString('onRequestDelete', $transactionList);
         $this->assertStringContainsString('updateTransaction', $service);
         $this->assertStringContainsString('deleteTransaction', $service);
+        $this->assertStringNotContainsString('Adicione ao seu livro.', $transactions);
+        $this->assertStringNotContainsString('transactions-quick-add', $transactions);
+        $this->assertStringContainsString('grid-cols-1', $transactions);
+        $this->assertStringContainsString('MAX_DESCRIPTION_LENGTH = 60', $transactionList);
+        $this->assertStringContainsString('description.slice(0, MAX_DESCRIPTION_LENGTH - 3)', $transactionList);
+        $this->assertStringContainsString('title={transaction.description}', $transactionList);
     }
 
     public function test_daily_movement_forms_use_inertia_form_models_and_presentational_components_have_no_http(): void
@@ -152,5 +158,23 @@ class FinancialDashboardTest extends TestCase
             $this->assertStringNotContainsString('fetch(', $component);
             $this->assertStringNotContainsString('FinancialService', $component);
         }
+    }
+
+    public function test_card_movements_expose_scoped_edit_and_delete_actions(): void
+    {
+        $modal = file_get_contents(resource_path('js/Pages/Financial/Components/CreditCardTransactionsModal.jsx'));
+        $hook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useCreditCards.js'));
+        $service = file_get_contents(resource_path('js/Services/FinancialService.js'));
+
+        foreach (['Editar parcela', 'Editar todas', 'Excluir parcela', 'Excluir todas'] as $label) {
+            $this->assertStringContainsString($label, $modal);
+        }
+        foreach (['requestEditInstallment', 'requestEditPurchase', 'requestDeleteInstallment', 'requestDeletePurchase', 'loadCardTransactions(transactionsCard, transactionsFilters)'] as $contract) {
+            $this->assertStringContainsString($contract, $hook);
+        }
+        $this->assertStringContainsString('updateCreditCardInstallment', $service);
+        $this->assertStringContainsString('updateCreditCardPurchase', $service);
+        $this->assertStringContainsString('deleteCreditCardInstallment', $service);
+        $this->assertStringContainsString('deleteCreditCardPurchase', $service);
     }
 }

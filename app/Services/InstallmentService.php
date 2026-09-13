@@ -19,4 +19,9 @@ class InstallmentService
     {
         return $this->repository->pendingForInvoice($id);
     }
+
+    public function lockForPurchase(int $purchaseId): Collection
+    {
+        return $this->repository->lockForPurchase($purchaseId);
+    }
 }

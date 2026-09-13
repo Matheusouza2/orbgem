@@ -14,4 +14,9 @@ class CreditCardPurchaseService
     {
         return $this->repository->create($dto);
     }
+
+    public function lockForUpdate(int $id): ?CreditCardPurchase
+    {
+        return $this->repository->lockForUpdate($id);
+    }
 }

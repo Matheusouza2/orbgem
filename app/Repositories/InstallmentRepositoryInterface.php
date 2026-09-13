@@ -10,4 +10,6 @@ interface InstallmentRepositoryInterface
     public function create(array $data): Installment;
 
     public function pendingForInvoice(int $invoiceId): Collection;
+
+    public function lockForPurchase(int $purchaseId): Collection;
 }

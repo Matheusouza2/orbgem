@@ -27,6 +27,8 @@ export default function useCreditCards() {
     const [transactionErrors, setTransactionErrors] = useState({});
     const [transactionSubmitting, setTransactionSubmitting] = useState(false);
     const [selectedCardForTransaction, setSelectedCardForTransaction] = useState(null);
+    const [editingCardTransaction, setEditingCardTransaction] = useState(null);
+    const [editingCardPurchase, setEditingCardPurchase] = useState(null);
     const form = useForm({ ...CreditCard });
     const transactionForm = useForm({ ...Transaction });
 
@@ -87,13 +89,27 @@ export default function useCreditCards() {
 
     const closeTransactionModal = () => { if (!transactionSubmitting) setTransactionModalOpen(false); };
 
+    const openCardEdit = (transaction, purchase = null) => {
+        const source = purchase ?? transaction;
+        setTransactionErrors({});
+        setEditingCardTransaction(purchase ? null : transaction);
+        setEditingCardPurchase(purchase ?? null);
+        setSelectedCardForTransaction(transactionsCard);
+        transactionForm.setData({ ...Transaction, wallet_id: transactionsCard.wallet_id, credit_card_id: transactionsCard.id, financial_instrument_type: 'CREDIT_CARD', type: 'EXPENSE', effect: 'DEBIT', status: transaction?.status ?? 'PROJECTED', description: purchase ? source.description : source.description.replace(/\s\(\d+\/\d+\)$/, ''), amount: Number(purchase ? source.total_amount : source.amount) / 100, transaction_date: purchase ? source.purchase_date : source.transaction_date, category_id: source.category_id ?? '', merchant_id: source.merchant_id ?? '', is_third_party: Boolean(transaction?.is_third_party) });
+        setTransactionModalOpen(true);
+    };
+    const requestEditInstallment = (transaction) => openCardEdit(transaction);
+    const requestEditPurchase = (purchase) => openCardEdit(null, purchase);
+    const requestDeleteInstallment = async (transaction) => { if (!window.confirm('Excluir somente esta parcela?')) return; try { await FinancialService.deleteCreditCardInstallment(transaction.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
+    const requestDeletePurchase = async (purchase) => { if (!window.confirm('Excluir todas as parcelas desta compra?')) return; try { await FinancialService.deleteCreditCardPurchase(purchase.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
+
     const submitTransaction = async (event) => {
         event.preventDefault();
         setTransactionErrors({});
         setTransactionSubmitting(true);
 
         try {
-            await FinancialService.createCreditCardPurchase({
+            const payload = {
                 wallet_id: Number(selectedCardForTransaction.wallet_id),
                 credit_card_id: Number(selectedCardForTransaction.id),
                 category_id: transactionForm.data.category_id ? Number(transactionForm.data.category_id) : null,
@@ -103,10 +119,16 @@ export default function useCreditCards() {
                 purchase_date: transactionForm.data.transaction_date,
                 total_amount: Math.round(Number(transactionForm.data.amount || 0) * 100),
                 installment_count: transactionForm.data.recurrence_type === 'INSTALLMENT' ? Number(transactionForm.data.installment_count) : 1,
-            });
+            };
+            if (editingCardTransaction) await FinancialService.updateCreditCardInstallment(editingCardTransaction.id, payload);
+            else if (editingCardPurchase) await FinancialService.updateCreditCardPurchase(editingCardPurchase.id, { description: payload.description, purchase_date: payload.purchase_date, total_amount: payload.total_amount, category_id: payload.category_id, merchant_id: payload.merchant_id, is_third_party: payload.is_third_party });
+            else await FinancialService.createCreditCardPurchase(payload);
             transactionForm.reset();
             setSelectedCardForTransaction(null);
+            setEditingCardTransaction(null);
+            setEditingCardPurchase(null);
             setTransactionModalOpen(false);
+            if (transactionsCard) await loadCardTransactions(transactionsCard, transactionsFilters);
         } catch (error) {
             setTransactionErrors(error?.errors ?? { general: error?.message ?? 'Não foi possível registrar a compra.' });
         } finally {
@@ -131,7 +153,7 @@ export default function useCreditCards() {
 
     const openTransactions = (card) => {
         const filters = { month: new Date().toISOString().slice(0, 7), status: '', page: 1, include_third_party: true };
-        setTransactionsCard(card);
+        setTransactionsCard({ ...card, onEditInstallment: requestEditInstallment, onEditPurchase: requestEditPurchase, onDeleteInstallment: requestDeleteInstallment, onDeletePurchase: requestDeletePurchase });
         setTransactionsFilters(filters);
         loadCardTransactions(card, filters);
     };
@@ -147,5 +169,5 @@ export default function useCreditCards() {
         loadCardTransactions(transactionsCard, filters);
     };
 
-    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit, transactionsCard, cardTransactions, transactionsMeta, transactionsLoading, transactionsError, transactionsFilters, openTransactions, closeTransactions, updateTransactionsFilters, changeTransactionsPage, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedCardForTransaction };
+    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit, transactionsCard, cardTransactions, transactionsMeta, transactionsLoading, transactionsError, transactionsFilters, openTransactions, closeTransactions, updateTransactionsFilters, changeTransactionsPage, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedCardForTransaction, editingCardTransaction, editingCardPurchase, requestEditInstallment, requestEditPurchase, requestDeleteInstallment, requestDeletePurchase };
 }
