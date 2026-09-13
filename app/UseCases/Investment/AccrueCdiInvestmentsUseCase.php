@@ -23,6 +23,9 @@ class AccrueCdiInvestmentsUseCase
         $processed = 0;
         foreach ($investments as $investment) {
             foreach ($observations as $observationDate => $dailyRate) {
+                if (! Carbon::parse($observationDate)->isWeekday()) {
+                    continue;
+                }
                 if ($investment->last_yield_date && $observationDate <= $investment->last_yield_date->toDateString()) {
                     continue;
                 }

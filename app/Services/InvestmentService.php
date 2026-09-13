@@ -36,6 +36,11 @@ class InvestmentService
         return $this->investmentRepository->find($investmentId);
     }
 
+    public function yields(Investment $investment, ?string $from = null, ?string $to = null): Collection
+    {
+        return $this->investmentRepository->yields($investment, $from, $to);
+    }
+
     public function activeCdi(): Collection
     {
         return $this->investmentRepository->activeCdi();

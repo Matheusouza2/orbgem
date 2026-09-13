@@ -1,0 +1,11 @@
+import { Button, Modal, ModalBody, ModalHeader } from 'flowbite-react';
+import { CalendarDays, TrendingUp } from 'lucide-react';
+import { formatDateBR } from '@/Utils/date';
+
+const money = (value) => (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export default function InvestmentYieldModal({ investment, yields, loading, onClose }) {
+    const total = yields.reduce((sum, item) => sum + Number(item.yield_amount || 0), 0);
+
+    return <Modal show={Boolean(investment)} onClose={onClose} size="lg"><ModalHeader><span className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-orbital-primary" aria-hidden="true" />Evolução diária · {investment?.ticker || investment?.name}</span></ModalHeader><ModalBody>{loading ? <div className="ledger-state" role="status">Carregando histórico…</div> : yields.length === 0 ? <div className="ledger-empty"><CalendarDays className="mx-auto h-8 w-8 text-orbital-primary" aria-hidden="true" /><p className="mt-3 font-semibold text-orbital-primary-dark">Nenhum rendimento contabilizado.</p></div> : <div><div className="mb-4 rounded-xl bg-orbital-primary-light p-4"><p className="text-xs font-semibold uppercase tracking-wide text-orbital-text-secondary">Rendimento acumulado</p><p className="mt-1 text-2xl font-bold text-orbital-primary-dark">{money(total)}</p></div><div className="overflow-x-auto"><table className="w-full min-w-[580px] text-left text-sm"><thead className="border-b border-orbital-border text-xs uppercase tracking-wide text-orbital-text-secondary"><tr><th className="px-3 py-3">Data</th><th className="px-3 py-3">Saldo inicial</th><th className="px-3 py-3">Taxa CDI</th><th className="px-3 py-3">Rendimento</th><th className="px-3 py-3">Saldo final</th></tr></thead><tbody className="divide-y divide-orbital-border">{yields.map((item) => <tr key={item.id}><td className="px-3 py-3 font-medium">{formatDateBR(item.reference_date)}</td><td className="px-3 py-3">{money(item.opening_value)}</td><td className="px-3 py-3">{item.cdi_daily_rate}% · {item.cdi_percentage}%</td><td className="px-3 py-3 font-semibold text-emerald-700">+ {money(item.yield_amount)}</td><td className="px-3 py-3">{money(item.closing_value)}</td></tr>)}</tbody></table></div></div>}<Button color="light" className="mt-5" onClick={onClose}>Fechar</Button></ModalBody></Modal>;
+}

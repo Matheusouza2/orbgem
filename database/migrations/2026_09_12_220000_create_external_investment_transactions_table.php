@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamp('imported_at')->nullable();
             $table->timestamps();
             $table->unique(['source', 'external_id']);
-            $table->index(['investment_id', 'transaction_date']);
+            $table->index(['investment_id', 'transaction_date'], 'external_investment_transactions_investment_date_idx');
         });
     }
 

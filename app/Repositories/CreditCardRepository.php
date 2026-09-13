@@ -22,7 +22,7 @@ class CreditCardRepository implements CreditCardRepositoryInterface
 
     public function forWallet(int $walletId): Collection
     {
-        return CreditCard::query()->where('wallet_id', $walletId)->latest()->get();
+        return CreditCard::query()->with(['invoices.installments'])->where('wallet_id', $walletId)->latest()->get();
     }
 
     public function find(int $id): ?CreditCard

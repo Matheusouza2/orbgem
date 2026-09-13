@@ -93,6 +93,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/market/quote', BrapiQuoteController::class);
     Route::apiResource('investments', InvestmentController::class)->except(['show']);
     Route::get('/investment-income', [InvestmentController::class, 'income']);
+    Route::get('/investments/{investment}/yields', [InvestmentController::class, 'yields'])->whereNumber('investment');
     Route::post('/consolidations', [Slice5Controller::class, 'createConsolidation']);
     Route::get('/consolidations', [Slice5Controller::class, 'listConsolidations']);
     Route::put('/consolidations/{consolidation}', [Slice5Controller::class, 'updateConsolidation'])->whereNumber('consolidation');

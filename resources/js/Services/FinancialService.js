@@ -64,6 +64,7 @@ const FinancialService = {
     deleteGoal: async (goalId, options = {}) => request(`/api/v1/financial-goals/${goalId}`, { method: 'DELETE', ...options }),
     contributeToGoal: async (goalId, payload, options = {}) => request(`/api/v1/financial-goals/${goalId}/contributions`, { method: 'POST', body: JSON.stringify(payload), ...options }),
     listInvestments: async (walletId, options = {}) => (await request(`/api/v1/investments?wallet_id=${walletId}`, options)).data,
+    listInvestmentYields: async (investmentId, params = {}, options = {}) => (await request(`/api/v1/investments/${investmentId}/yields?${new URLSearchParams(params)}`, options)).data,
     listInvestmentIncome: async (walletId, params = {}, options = {}) => (await request(`/api/v1/investment-income?${new URLSearchParams({ wallet_id: walletId, ...params })}`, options)).data,
     createInvestment: async (payload, options = {}) => request('/api/v1/investments', { method: 'POST', body: JSON.stringify(payload), ...options }),
     updateInvestment: async (investmentId, payload, options = {}) => request(`/api/v1/investments/${investmentId}`, { method: 'PUT', body: JSON.stringify(payload), ...options }),

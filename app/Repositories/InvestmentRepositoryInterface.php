@@ -21,4 +21,6 @@ interface InvestmentRepositoryInterface
     public function accrueCdi(Investment $investment, string $date, float $dailyRate, int $yieldAmount, int $closingValue): bool;
 
     public function find(int $investmentId): ?Investment;
+
+    public function yields(Investment $investment, ?string $from = null, ?string $to = null): Collection;
 }

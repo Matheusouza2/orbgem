@@ -90,6 +90,19 @@ class CreditCardTest extends TestCase
         $this->assertSame([$member->id, $member->id, $member->id], Transaction::query()->orderBy('id')->pluck('created_by_member_id')->all());
     }
 
+    public function test_card_list_includes_current_invoice_and_limit_usage(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $card = $this->creditCard($wallet);
+        $this->createPurchase($user, $wallet, $card);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards?wallet_id='.$wallet->id)
+            ->assertOk()
+            ->assertJsonPath('data.0.current_invoice_amount', 1000)
+            ->assertJsonPath('data.0.limit_usage_percentage', 1);
+    }
+
     public function test_card_transactions_include_purchases_and_imported_pluggy_transactions(): void
     {
         [$user, $wallet, $member] = $this->walletWithMember(WalletMemberRole::EDITOR);

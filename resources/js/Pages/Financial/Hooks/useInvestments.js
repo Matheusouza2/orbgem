@@ -11,6 +11,10 @@ export default function useInvestments() {
     const [income, setIncome] = useState([]);
     const [incomeFilters, setIncomeFilters] = useState({ investment_id: '', from: '', to: '' });
     const [incomeLoading, setIncomeLoading] = useState(false);
+    const [investmentFilters, setInvestmentFilters] = useState({ type: '', institution: '' });
+    const [yieldInvestment, setYieldInvestment] = useState(null);
+    const [yields, setYields] = useState([]);
+    const [yieldsLoading, setYieldsLoading] = useState(false);
     const [selectedWalletId, setSelectedWalletId] = useState('');
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -60,6 +64,25 @@ export default function useInvestments() {
 
     const updateIncomeFilters = (field, value) => setIncomeFilters((current) => ({ ...current, [field]: value }));
     const applyIncomeFilters = () => loadIncome(selectedWalletId);
+
+    const filteredInvestments = investments.filter((investment) => (
+        (!investmentFilters.type || investment.type === investmentFilters.type)
+        && (!investmentFilters.institution || investment.institution === investmentFilters.institution)
+    ));
+    const updateInvestmentFilter = (field, value) => setInvestmentFilters((current) => ({ ...current, [field]: value }));
+
+    const openYields = async (investment) => {
+        setYieldInvestment(investment);
+        setYieldsLoading(true);
+        try {
+            setYields(await FinancialService.listInvestmentYields(investment.id));
+        } catch (error) {
+            setErrors(normalizeErrors(error));
+        } finally {
+            setYieldsLoading(false);
+        }
+    };
+    const closeYields = () => setYieldInvestment(null);
 
     const openModal = (investment = null) => {
         setErrors({});
@@ -118,5 +141,5 @@ export default function useInvestments() {
         try { await FinancialService.deleteInvestment(investment.id); setInvestments((current) => current.filter((item) => item.id !== investment.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 
-    return { wallets, investments, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters };
+    return { wallets, investments: filteredInvestments, allInvestments: investments, investmentFilters, updateInvestmentFilter, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters, yieldInvestment, yields, yieldsLoading, openYields, closeYields };
 }

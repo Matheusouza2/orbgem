@@ -35,6 +35,15 @@ class InvestmentRepository implements InvestmentRepositoryInterface
         return Investment::query()->find($investmentId);
     }
 
+    public function yields(Investment $investment, ?string $from = null, ?string $to = null): Collection
+    {
+        return $investment->yields()
+            ->when($from, fn ($query) => $query->whereDate('reference_date', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('reference_date', '<=', $to))
+            ->orderByDesc('reference_date')
+            ->get();
+    }
+
     public function activeCdi(): Collection
     {
         return Investment::query()->where('cdi_linked', true)->where('active', true)->get();
