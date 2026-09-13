@@ -15,6 +15,10 @@ interface TransactionRepositoryInterface
 
     public function findForReversal(int $transactionId): ?Transaction;
 
+    public function lockForUpdate(int $transactionId): ?Transaction;
+
+    public function delete(Transaction $transaction): void;
+
     public function lockForReversal(int $transactionId): ?Transaction;
 
     public function lockTransferGroupForReversal(string $transferGroupId): Collection;

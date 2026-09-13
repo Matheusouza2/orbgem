@@ -298,11 +298,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .transactions-stats span, .transactions-stats small { color: var(--orbital-text-secondary); font-size: .7rem; }
 .transactions-stats strong { font-size: 1.15rem; letter-spacing: -.03em; }
 .transactions-stats small { font-size: .65rem; }
-.transactions-list { border-radius: 1rem; }
+.transactions-list { border-radius: 1rem; min-width: 0; overflow: hidden; }
 .transactions-count { color: var(--orbital-text-secondary); font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .transactions-list__items { display: grid; gap: .35rem; }
 .transaction-row { align-items: center; border-left: 3px solid transparent; border-radius: .75rem; display: flex; gap: .85rem; min-height: 4.5rem; padding: .7rem .6rem .7rem .75rem; transition: background-color .2s ease, transform .2s ease; }
 .transaction-row:hover { background: var(--orbital-background); transform: translateX(3px); }
+.transaction-row__content { min-width: 0; }
+.transaction-row__actions { flex: 0 0 auto; min-width: max-content; }
+.transaction-actions-dropdown > button { align-items: center; border-radius: .5rem; color: var(--orbital-text-secondary); display: inline-flex; height: 2rem; justify-content: center; padding: .35rem; width: 2rem; }
+.transaction-actions-dropdown > button:hover { background: var(--orbital-primary-light); color: var(--orbital-primary); }
+.transaction-actions-dropdown[data-testid='flowbite-dropdown'][role='menu'],
+.transaction-actions-dropdown[data-testid='flowbite-dropdown'][role='menu'] > ul {
+    background: var(--orbital-surface) !important;
+    border: 1px solid var(--orbital-border) !important;
+    border-radius: .7rem !important;
+    box-shadow: 0 14px 32px rgb(11 36 84 / 16%) !important;
+    min-width: 10rem;
+    overflow: hidden;
+    padding: .35rem !important;
+}
 .transaction-row--credit { border-left-color: #10b981; }
 .transaction-row--debit { border-left-color: #fb7185; }
 .transaction-row__icon { align-items: center; background: var(--orbital-primary-light); border-radius: .65rem; color: var(--orbital-primary); display: inline-flex; flex: 0 0 2.35rem; height: 2.35rem; justify-content: center; }

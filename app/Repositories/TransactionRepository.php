@@ -24,6 +24,16 @@ class TransactionRepository implements TransactionRepositoryInterface
         return Transaction::query()->find($transactionId);
     }
 
+    public function lockForUpdate(int $transactionId): ?Transaction
+    {
+        return Transaction::query()->lockForUpdate()->find($transactionId);
+    }
+
+    public function delete(Transaction $transaction): void
+    {
+        $transaction->delete();
+    }
+
     public function lockForReversal(int $transactionId): ?Transaction
     {
         return Transaction::query()->lockForUpdate()->find($transactionId);

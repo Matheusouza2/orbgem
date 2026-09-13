@@ -57,6 +57,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/merchants', [MerchantController::class, 'store']);
     Route::get('/merchants', [MerchantController::class, 'index']);
     Route::post('/transactions', [TransactionController::class, 'store']);
+    Route::put('/transactions/{transaction}', [TransactionController::class, 'update'])->whereNumber('transaction');
+    Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->whereNumber('transaction');
+    Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->whereNumber('transaction');
     Route::post('/transactions/{transaction}/reversal', [TransactionReversalController::class, 'store'])->whereNumber('transaction');
     Route::post('/account-transfers', [AccountTransferController::class, 'store']);
     Route::get('/transactions', [TransactionController::class, 'index']);

@@ -6,6 +6,7 @@ import Transaction from '@/Models/Transaction';
 import TransactionReversal from '@/Models/TransactionReversal';
 import FinancialService from '@/Services/FinancialService';
 import {
+    canManageTransaction,
     canReverseTransaction,
     effectForType,
     emptySummary,
@@ -49,6 +50,7 @@ export default function useDashboard() {
     const [transferOpen, setTransferOpen] = useState(false);
     const [merchantOpen, setMerchantOpen] = useState(false);
     const [reversalTransaction, setReversalTransaction] = useState(null);
+    const [editingTransaction, setEditingTransaction] = useState(null);
     const requestId = useRef(0);
 
     const form = useForm({ ...Transaction });
@@ -118,6 +120,7 @@ export default function useDashboard() {
                 setTransactions(availableTransactions.map((transaction) => ({
                     ...transaction,
                     canReverse: canReverseTransaction(transaction),
+                    canManage: canManageTransaction(transaction),
                 })));
                 setSummary(availableSummary);
                 setPreviousSummary(availablePreviousSummary);
@@ -156,6 +159,7 @@ export default function useDashboard() {
         setTransactions(availableTransactions.map((transaction) => ({
             ...transaction,
             canReverse: canReverseTransaction(transaction),
+            canManage: canManageTransaction(transaction),
         })));
         setSummary(availableSummary);
         setPreviousSummary(availablePreviousSummary);
@@ -185,6 +189,18 @@ export default function useDashboard() {
         event.preventDefault();
         setApiErrors({});
         const requestError = await runAction('transaction', () => {
+            const payload = {
+                ...form.data,
+                wallet_id: Number(selectedWalletId),
+                account_id: Number(form.data.account_id),
+                credit_card_id: null,
+                amount: toCents(form.data.amount),
+                effect: effectForType(form.data.type),
+                financial_instrument_type: 'ACCOUNT',
+            };
+
+            if (editingTransaction) return FinancialService.updateTransaction(editingTransaction.id, payload);
+
             if (form.data.financial_instrument_type === 'CREDIT_CARD') {
                 return FinancialService.createCreditCardPurchase({
                     wallet_id: Number(selectedWalletId),
@@ -198,19 +214,14 @@ export default function useDashboard() {
                 });
             }
 
-            return FinancialService.createTransaction({
-                ...form.data,
-                wallet_id: Number(selectedWalletId),
-                account_id: Number(form.data.account_id),
-                credit_card_id: null,
-                amount: toCents(form.data.amount),
-                effect: effectForType(form.data.type),
-                financial_instrument_type: 'ACCOUNT',
-            });
+            return FinancialService.createTransaction(payload);
         }, reload);
 
         if (requestError) setApiErrors(normalizeErrors(requestError));
-        else form.reset();
+        else {
+            form.reset();
+            setEditingTransaction(null);
+        }
 
         return requestError;
     };
@@ -251,6 +262,29 @@ export default function useDashboard() {
         setReversalErrors({});
     };
 
+    const requestEdit = (transaction) => {
+        setApiErrors({});
+        setEditingTransaction(transaction);
+        form.reset();
+        form.setData({
+            ...Transaction,
+            ...transaction,
+            amount: (Number(transaction.amount || 0) / 100).toFixed(2),
+            due_date: transaction.due_date ?? '',
+            paid_at: transaction.paid_at ?? null,
+            recurrence_type: transaction.recurrence_type ?? 'NONE',
+            payment_channel: transaction.payment_channel ?? 'PIX',
+            financial_instrument_type: 'ACCOUNT',
+            credit_card_id: null,
+        });
+    };
+
+    const requestDelete = async (transaction) => {
+        if (!window.confirm(`Excluir o lançamento “${transaction.description}”?`)) return;
+
+        await runAction('transaction-delete', () => FinancialService.deleteTransaction(transaction.id), reload);
+    };
+
     const confirmReversal = async (event) => {
         event.preventDefault();
         setReversalErrors({});
@@ -289,6 +323,7 @@ export default function useDashboard() {
         transferOpen,
         merchantOpen,
         reversalTransaction,
+        editingTransaction,
         form,
         transferForm,
         merchantForm,
@@ -302,10 +337,13 @@ export default function useDashboard() {
         setTransferOpen,
         setMerchantOpen,
         setReversalTransaction,
+        setEditingTransaction,
         submitTransaction,
         submitMerchant,
         submitTransfer,
         requestReversal,
+        requestEdit,
+        requestDelete,
         confirmReversal,
         isCurrentContext,
     };

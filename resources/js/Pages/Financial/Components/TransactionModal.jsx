@@ -14,7 +14,7 @@ function ChoiceCard({ active, variant, icon: Icon, label, description, onClick }
     return <button type="button" className={`transaction-choice transaction-choice--${variant} ${active ? 'transaction-choice--active' : ''}`} onClick={onClick} aria-pressed={active}><span className="transaction-choice__icon"><Icon aria-hidden="true" /></span><span><strong>{label}</strong><small>{description}</small></span>{active && <Check className="transaction-choice__check" aria-hidden="true" />}</button>;
 }
 
-export default function TransactionModal({ open, onClose, form, accounts, creditCards = [], categories = [], merchants = [], onSubmit, onCreateMerchant, submitting, apiErrors }) {
+export default function TransactionModal({ open, onClose, form, accounts, creditCards = [], categories = [], merchants = [], onSubmit, onCreateMerchant, submitting, apiErrors, editing = null }) {
     const [step, setStep] = useState(1);
     const [stepError, setStepError] = useState('');
     const errors = Object.fromEntries(Object.entries({ ...form.errors, ...apiErrors }).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]));

@@ -46,6 +46,14 @@ class PluggySynchronizationTest extends TestCase
 
         self::assertSame(1, ExternalTransaction::query()->where('source', 'pluggy')->where('external_id', 'transaction-1')->count());
         self::assertSame(1, $wallet->transactions()->where('description', 'Salário')->count());
+
+        $transaction = $wallet->transactions()->where('description', 'Salário')->firstOrFail();
+        $this->actingAs($user, 'sanctum')->deleteJson('/api/v1/transactions/'.$transaction->id)->assertNoContent();
+        self::assertNull(ExternalTransaction::query()->where('external_id', 'transaction-1')->value('transaction_id'));
+
+        SyncPluggyTransactionsJob::dispatchSync($externalAccount->id);
+
+        self::assertSame(0, $wallet->transactions()->where('description', 'Salário')->count());
     }
 
     public function test_it_imports_pluggy_investment_income_with_paginated_results_idempotently(): void

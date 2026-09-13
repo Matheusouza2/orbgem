@@ -100,6 +100,11 @@ class Transaction extends Model
         return $this->morphMany(Attachment::class, 'attachable');
     }
 
+    public function invoicePayments(): HasMany
+    {
+        return $this->hasMany(InvoicePayment::class);
+    }
+
     protected function casts(): array
     {
         return [

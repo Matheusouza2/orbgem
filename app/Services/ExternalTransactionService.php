@@ -28,6 +28,14 @@ class ExternalTransactionService
                 throw new \LogicException('A wallet must have an owner to import transactions.');
             }
 
+            if ($existing !== null && $existing->transaction_id === null) {
+                return $this->repository->upsert('pluggy', $dto->externalId, [
+                    'external_account_id' => $externalAccount->id,
+                    'imported_at' => now(),
+                    'raw_data' => $dto->rawData,
+                ]);
+            }
+
             $transactionData = [
                 'wallet_id' => $dto->walletId,
                 'account_id' => $dto->accountId,

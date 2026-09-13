@@ -24,6 +24,19 @@ export const canReverseTransaction = (transaction) => (
     && (transaction.type !== 'TRANSFER' || transaction.effect === 'DEBIT')
 );
 
+export const canManageTransaction = (transaction) => (
+    transaction.financial_instrument_type === 'ACCOUNT'
+    && transaction.effect !== 'NONE'
+    && transaction.type !== 'TRANSFER'
+    && !transaction.reversal_of_transaction_id
+    && !transaction.transfer_group_id
+    && !transaction.installment_id
+    && !transaction.credit_card_invoice_id
+    && !transaction.recurring_transaction_id
+    && !transaction.financial_commitment_id
+    && !transaction.has_reversal
+);
+
 export const isCurrentContext = (currentContext, candidateContext) => (
     currentContext.id === candidateContext.id
     && currentContext.walletId === candidateContext.walletId

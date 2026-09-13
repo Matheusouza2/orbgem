@@ -95,6 +95,8 @@ const FinancialService = {
         body: JSON.stringify(payload),
         ...options,
     }),
+    updateTransaction: async (transactionId, payload, options = {}) => request(`/api/v1/transactions/${transactionId}`, { method: 'PUT', body: JSON.stringify(payload), ...options }),
+    deleteTransaction: async (transactionId, options = {}) => request(`/api/v1/transactions/${transactionId}`, { method: 'DELETE', ...options }),
     listRecurringTransactions: async (walletId, options = {}) => (await request(`/api/v1/recurring-transactions?wallet_id=${walletId}`, options)).data,
     createRecurringTransaction: async (payload, options = {}) => request('/api/v1/recurring-transactions', { method: 'POST', body: JSON.stringify(payload), ...options }),
     updateRecurringTransaction: async (recurringId, payload, options = {}) => request(`/api/v1/recurring-transactions/${recurringId}`, { method: 'PUT', body: JSON.stringify(payload), ...options }),

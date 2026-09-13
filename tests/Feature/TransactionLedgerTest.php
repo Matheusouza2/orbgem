@@ -348,6 +348,53 @@ class TransactionLedgerTest extends TestCase
         $this->actingAs($user, 'sanctum')->postJson('/api/v1/transactions', $this->payload($wallet, $account, $category, TransactionType::EXPENSE, TransactionEffect::DEBIT, 100))->assertUnprocessable()->assertJsonValidationErrors('category_id');
     }
 
+    public function test_editor_can_update_and_delete_an_account_transaction(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::EDITOR);
+        $account = $this->account($wallet);
+        $category = $this->category($wallet, TransactionType::EXPENSE);
+        $transaction = Transaction::query()->create([
+            ...$this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, 100),
+            'created_by_member_id' => WalletMember::query()->where('wallet_id', $wallet->id)->value('id'),
+            'updated_by_member_id' => WalletMember::query()->where('wallet_id', $wallet->id)->value('id'),
+        ]);
+
+        $this->actingAs($user, 'sanctum')->putJson('/api/v1/transactions/'.$transaction->id, [
+            ...$this->payload($wallet, $account, $category, TransactionType::EXPENSE, TransactionEffect::DEBIT, 250),
+            'description' => 'Despesa corrigida',
+            'transaction_date' => '2026-09-10',
+            'competence_date' => '2026-09-10',
+            'due_date' => null,
+            'recurrence_type' => TransactionRecurrence::NONE->value,
+            'auto_post_on_due_date' => false,
+            'paid_at' => null,
+            'payment_channel' => null,
+            'notes' => 'Ajuste manual',
+            'is_third_party' => true,
+        ])->assertOk()->assertJsonPath('data.description', 'Despesa corrigida')->assertJsonPath('data.amount', 250);
+
+        $this->assertDatabaseHas('transactions', ['id' => $transaction->id, 'description' => 'Despesa corrigida', 'amount' => 250, 'category_id' => $category->id, 'is_third_party' => true]);
+        $this->actingAs($user, 'sanctum')->deleteJson('/api/v1/transactions/'.$transaction->id)->assertNoContent();
+        $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
+    }
+
+    public function test_viewer_cannot_update_or_delete_an_account_transaction(): void
+    {
+        [$owner, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        [$viewer] = $this->walletWithMember(WalletMemberRole::VIEWER);
+        WalletMember::query()->create(['wallet_id' => $wallet->id, 'user_id' => $viewer->id, 'role' => WalletMemberRole::VIEWER, 'joined_at' => Carbon::now()]);
+        $account = $this->account($wallet);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->where('user_id', $owner->id)->value('id');
+        $transaction = Transaction::query()->create([
+            ...$this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, 100),
+            'created_by_member_id' => $memberId,
+            'updated_by_member_id' => $memberId,
+        ]);
+
+        $this->actingAs($viewer, 'sanctum')->putJson('/api/v1/transactions/'.$transaction->id, $this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, 100))->assertForbidden();
+        $this->actingAs($viewer, 'sanctum')->deleteJson('/api/v1/transactions/'.$transaction->id)->assertForbidden();
+    }
+
     /** @return array{User, Wallet} */
     private function walletWithMember(WalletMemberRole $role): array
     {

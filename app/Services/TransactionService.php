@@ -24,6 +24,16 @@ class TransactionService
         return $this->transactionRepository->findForReversal($transactionId);
     }
 
+    public function lockForUpdate(int $transactionId): ?Transaction
+    {
+        return $this->transactionRepository->lockForUpdate($transactionId);
+    }
+
+    public function delete(Transaction $transaction): void
+    {
+        $this->transactionRepository->delete($transaction);
+    }
+
     public function lockForReversal(int $transactionId): ?Transaction
     {
         return $this->transactionRepository->lockForReversal($transactionId);

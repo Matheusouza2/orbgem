@@ -119,12 +119,22 @@ class FinancialDashboardTest extends TestCase
     {
         $navigation = file_get_contents(resource_path('js/Components/Navigation/AppNavigation.jsx'));
         $transactions = file_get_contents(resource_path('js/Pages/Financial/Transactions.jsx'));
+        $transactionList = file_get_contents(resource_path('js/Pages/Financial/Components/TransactionList.jsx'));
+        $service = file_get_contents(resource_path('js/Services/FinancialService.js'));
 
         $this->assertStringContainsString("href: '/transacoes', icon: ReceiptText }", $navigation);
         $this->assertStringNotContainsString("href: '/transacoes', icon: ReceiptText, comingSoon: true", $navigation);
         $this->assertStringContainsString('useDashboard', $transactions);
         $this->assertStringContainsString('TransactionModal', $transactions);
         $this->assertStringContainsString('TransactionList', $transactions);
+        $this->assertStringContainsString('transaction-row__content', $transactionList);
+        $this->assertStringContainsString('transaction-row__actions', $transactionList);
+        $this->assertStringContainsString('MoreVertical', $transactionList);
+        $this->assertStringContainsString('DropdownItem', $transactionList);
+        $this->assertStringContainsString('onRequestEdit', $transactionList);
+        $this->assertStringContainsString('onRequestDelete', $transactionList);
+        $this->assertStringContainsString('updateTransaction', $service);
+        $this->assertStringContainsString('deleteTransaction', $service);
     }
 
     public function test_daily_movement_forms_use_inertia_form_models_and_presentational_components_have_no_http(): void
