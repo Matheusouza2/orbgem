@@ -6,6 +6,7 @@ use App\DTO\MonthlySummaryDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\TransactionListFilterDTO;
 use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -91,9 +92,79 @@ class TransactionRepository implements TransactionRepositoryInterface
     public function totalsForMonth(MonthlySummaryDTO $summary): array
     {
         [$start, $end] = $this->monthBounds($summary->month);
-        $rows = Transaction::query()->includedInTotals()->when(! $summary->includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $summary->walletId)->where('competence_date', '>=', $start)->where('competence_date', '<', $end)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
+        $rows = Transaction::query()->with('category')->includedInTotals()->when(! $summary->includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $summary->walletId)->where('competence_date', '>=', $start)->where('competence_date', '<', $end)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
 
-        return ['actual_expenses' => $rows->where('type', 'EXPENSE')->where('status', TransactionStatus::POSTED)->sum('amount'), 'forecast_expenses' => $rows->where('type', 'EXPENSE')->sum('amount'), 'actual_income' => $rows->where('type', 'INCOME')->where('status', TransactionStatus::POSTED)->sum('amount'), 'forecast_income' => $rows->where('type', 'INCOME')->sum('amount')];
+        return [
+            'actual_expenses' => $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::POSTED)->sum('amount'),
+            'forecast_expenses' => $rows->where('type', TransactionType::EXPENSE)->sum('amount'),
+            'actual_income' => $rows->where('type', TransactionType::INCOME)->where('status', TransactionStatus::POSTED)->sum('amount'),
+            'forecast_income' => $rows->where('type', TransactionType::INCOME)->sum('amount'),
+            'expense_by_category' => $this->expensesByCategory($rows),
+            'income_status_breakdown' => $this->statusBreakdown($rows, TransactionType::INCOME),
+            'expense_status_breakdown' => $this->statusBreakdown($rows, TransactionType::EXPENSE),
+        ];
+    }
+
+    /** @return array<int, array{category_id: int|null, category_name: string, amount: int}> */
+    private function expensesByCategory(Collection $rows): array
+    {
+        return $rows
+            ->where('type', TransactionType::EXPENSE)
+            ->where('status', TransactionStatus::POSTED)
+            ->groupBy(fn (Transaction $transaction): ?int => $transaction->category_id)
+            ->map(function (Collection $categoryRows, $categoryId): array {
+                $category = $categoryRows->first()->category;
+
+                return [
+                    'category_id' => $categoryId === '' || $categoryId === null ? null : (int) $categoryId,
+                    'category_name' => $category?->name ?? 'Sem categoria',
+                    'amount' => (int) $categoryRows->sum('amount'),
+                ];
+            })
+            ->sort(function (array $first, array $second): int {
+                $amountOrder = $second['amount'] <=> $first['amount'];
+                if ($amountOrder !== 0) {
+                    return $amountOrder;
+                }
+
+                if ($first['category_id'] === null) {
+                    return 1;
+                }
+                if ($second['category_id'] === null) {
+                    return -1;
+                }
+
+                return $first['category_id'] <=> $second['category_id'];
+            })
+            ->values()
+            ->all();
+    }
+
+    /** @return array{posted: int, upcoming: int, overdue: int, distant: int} */
+    private function statusBreakdown(Collection $rows, TransactionType $type): array
+    {
+        $today = Carbon::today();
+        $limit = $today->copy()->addDays(7);
+        $breakdown = ['posted' => 0, 'upcoming' => 0, 'overdue' => 0, 'distant' => 0];
+
+        $rows->where('type', $type)->each(function (Transaction $transaction) use (&$breakdown, $today, $limit): void {
+            if ($transaction->status === TransactionStatus::POSTED) {
+                $breakdown['posted'] += (int) $transaction->amount;
+
+                return;
+            }
+
+            $dueDate = $transaction->due_date;
+            if ($dueDate !== null && $dueDate->isBefore($today)) {
+                $breakdown['overdue'] += (int) $transaction->amount;
+            } elseif ($dueDate !== null && $dueDate->lessThanOrEqualTo($limit)) {
+                $breakdown['upcoming'] += (int) $transaction->amount;
+            } else {
+                $breakdown['distant'] += (int) $transaction->amount;
+            }
+        });
+
+        return $breakdown;
     }
 
     /** @return array{string, string} */

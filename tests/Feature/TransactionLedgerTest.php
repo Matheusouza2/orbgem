@@ -51,6 +51,52 @@ class TransactionLedgerTest extends TestCase
         $summary->assertOk()->assertJsonPath('data.balance', 13000)->assertJsonPath('data.actual_expenses', 2000)->assertJsonPath('data.forecast_expenses', 5000)->assertJsonPath('data.actual_income', 5000)->assertJsonPath('data.forecast_income', 5700);
     }
 
+    public function test_monthly_summary_exposes_category_and_due_status_aggregates(): void
+    {
+        Carbon::setTestNow('2026-09-13 12:00:00');
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $account = $this->account($wallet);
+        $food = $this->category($wallet, TransactionType::EXPENSE);
+        $housing = $this->category($wallet, TransactionType::EXPENSE);
+        $incomeCategory = $this->category($wallet, TransactionType::INCOME);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->where('user_id', $user->id)->value('id');
+
+        $create = function (TransactionType $type, TransactionEffect $effect, int $amount, ?Category $category, TransactionStatus $status, ?string $dueDate) use ($wallet, $account, $memberId): void {
+            Transaction::query()->create([
+                ...$this->payload($wallet, $account, $category, $type, $effect, $amount),
+                'status' => $status,
+                'due_date' => $dueDate,
+                'created_by_member_id' => $memberId,
+                'updated_by_member_id' => $memberId,
+            ]);
+        };
+
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 300, $food, TransactionStatus::POSTED, null);
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 200, $food, TransactionStatus::POSTED, null);
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 400, $housing, TransactionStatus::POSTED, null);
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 500, null, TransactionStatus::POSTED, null);
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 600, $food, TransactionStatus::PROJECTED, '2026-09-12');
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 700, $food, TransactionStatus::PROJECTED, '2026-09-20');
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 800, $food, TransactionStatus::PROJECTED, '2026-10-01');
+        $create(TransactionType::EXPENSE, TransactionEffect::DEBIT, 900, $food, TransactionStatus::PROJECTED, null);
+        $create(TransactionType::INCOME, TransactionEffect::CREDIT, 1000, $incomeCategory, TransactionStatus::POSTED, null);
+        $create(TransactionType::INCOME, TransactionEffect::CREDIT, 1100, $incomeCategory, TransactionStatus::PROJECTED, '2026-09-19');
+        $create(TransactionType::INCOME, TransactionEffect::CREDIT, 1200, $incomeCategory, TransactionStatus::PROJECTED, '2026-09-25');
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/monthly-summary?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.expense_by_category', [
+                ['category_id' => $food->id, 'category_name' => $food->name, 'amount' => 500],
+                ['category_id' => null, 'category_name' => 'Sem categoria', 'amount' => 500],
+                ['category_id' => $housing->id, 'category_name' => $housing->name, 'amount' => 400],
+            ])
+            ->assertJsonPath('data.expense_status_breakdown', ['posted' => 1400, 'upcoming' => 700, 'overdue' => 600, 'distant' => 1700])
+            ->assertJsonPath('data.income_status_breakdown', ['posted' => 1000, 'upcoming' => 1100, 'overdue' => 0, 'distant' => 1200]);
+
+        Carbon::setTestNow();
+    }
+
     public function test_third_party_expenses_can_be_excluded_from_monthly_summary(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
