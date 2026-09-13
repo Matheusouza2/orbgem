@@ -13,6 +13,8 @@ interface TransactionRepositoryInterface
 {
     public function create(TransactionDTO $transactionDTO): Transaction;
 
+    public function find(int $transactionId): ?Transaction;
+
     public function findForReversal(int $transactionId): ?Transaction;
 
     public function lockForUpdate(int $transactionId): ?Transaction;

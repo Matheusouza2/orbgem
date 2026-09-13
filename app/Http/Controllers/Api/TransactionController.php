@@ -8,13 +8,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Transaction\CreateTransactionRequest;
 use App\Http\Requests\Transaction\ListTransactionRequest;
 use App\Http\Requests\Transaction\UpdateTransactionRequest;
+use App\Http\Resources\TransactionDetailResource;
 use App\Http\Resources\TransactionResource;
 use App\Models\User;
 use App\UseCases\Transaction\CreateTransactionUseCase;
 use App\UseCases\Transaction\DeleteTransactionUseCase;
 use App\UseCases\Transaction\ListTransactionUseCase;
+use App\UseCases\Transaction\ShowTransactionUseCase;
 use App\UseCases\Transaction\UpdateTransactionUseCase;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class TransactionController extends Controller
 {
@@ -34,6 +37,14 @@ class TransactionController extends Controller
         return TransactionResource::collection($useCase->execute(TransactionListFilterDTO::fromArray($request->validated()), $user));
     }
 
+    public function show(int $transaction, ShowTransactionUseCase $useCase): TransactionDetailResource
+    {
+        /** @var User $user */
+        $user = request()->user();
+
+        return new TransactionDetailResource($useCase->execute($transaction, $user));
+    }
+
     public function update(UpdateTransactionRequest $request, int $transaction, UpdateTransactionUseCase $useCase): TransactionResource
     {
         /** @var User $user */
@@ -42,7 +53,7 @@ class TransactionController extends Controller
         return new TransactionResource($useCase->execute($transaction, $request->validated(), $user));
     }
 
-    public function destroy(int $transaction, DeleteTransactionUseCase $useCase): \Illuminate\Http\Response
+    public function destroy(int $transaction, DeleteTransactionUseCase $useCase): Response
     {
         /** @var User $user */
         $user = request()->user();

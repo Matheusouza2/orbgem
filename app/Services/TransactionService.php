@@ -19,6 +19,11 @@ class TransactionService
         return $this->transactionRepository->create($dto);
     }
 
+    public function find(int $transactionId): ?Transaction
+    {
+        return $this->transactionRepository->find($transactionId);
+    }
+
     public function findForReversal(int $transactionId): ?Transaction
     {
         return $this->transactionRepository->findForReversal($transactionId);

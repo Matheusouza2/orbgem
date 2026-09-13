@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/transactions/{transaction}/reversal', [TransactionReversalController::class, 'store'])->whereNumber('transaction');
     Route::post('/account-transfers', [AccountTransferController::class, 'store']);
     Route::get('/transactions', [TransactionController::class, 'index']);
+    Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->whereNumber('transaction');
     Route::get('/monthly-summary', MonthlySummaryController::class);
     Route::post('/credit-cards', [CreditCardController::class, 'store']);
     Route::get('/credit-cards', [CreditCardController::class, 'index']);

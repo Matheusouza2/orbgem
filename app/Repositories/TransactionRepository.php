@@ -19,6 +19,14 @@ class TransactionRepository implements TransactionRepositoryInterface
         return Transaction::query()->create($transactionDTO->toArray());
     }
 
+    public function find(int $transactionId): ?Transaction
+    {
+        return Transaction::query()
+            ->withExists('reversals')
+            ->with(['wallet', 'account', 'category', 'merchant'])
+            ->find($transactionId);
+    }
+
     public function findForReversal(int $transactionId): ?Transaction
     {
         return Transaction::query()->find($transactionId);

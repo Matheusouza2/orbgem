@@ -12,6 +12,7 @@ use App\Enums\TransactionType;
 use App\Enums\WalletMemberRole;
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\Merchant;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Wallet;
@@ -28,7 +29,59 @@ class TransactionLedgerTest extends TestCase
     {
         $this->postJson('/api/v1/transactions', [])->assertUnauthorized();
         $this->getJson('/api/v1/transactions?wallet_id=1')->assertUnauthorized();
+        $this->getJson('/api/v1/transactions/1')->assertUnauthorized();
         $this->getJson('/api/v1/monthly-summary?wallet_id=1&month=2026-09')->assertUnauthorized();
+    }
+
+    public function test_viewer_can_consult_a_transaction_detail_with_the_resource_contract(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::VIEWER);
+        $member = WalletMember::query()->where('wallet_id', $wallet->id)->where('user_id', $user->id)->firstOrFail();
+        $account = $this->account($wallet);
+        $category = Category::create(['wallet_id' => $wallet->id, 'name' => 'Alimentação', 'type' => TransactionType::EXPENSE, 'icon' => 'Utensils', 'icon_color' => '#279112', 'active' => true]);
+        $merchant = Merchant::create(['wallet_id' => $wallet->id, 'name' => 'Mercado Central', 'normalized_name' => 'mercado central', 'active' => true]);
+        $transaction = Transaction::create([
+            ...$this->payload($wallet, $account, $category, TransactionType::EXPENSE, TransactionEffect::DEBIT, 18990),
+            'merchant_id' => $merchant->id,
+            'notes' => 'Compra detalhada',
+            'created_by_member_id' => $member->id,
+            'updated_by_member_id' => $member->id,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/transactions/{$transaction->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $transaction->id)
+            ->assertJsonPath('data.wallet_id', $wallet->id)
+            ->assertJsonPath('data.account_id', $account->id)
+            ->assertJsonPath('data.category_id', $category->id)
+            ->assertJsonPath('data.category.id', $category->id)
+            ->assertJsonPath('data.category.name', 'Alimentação')
+            ->assertJsonPath('data.category.icon', 'Utensils')
+            ->assertJsonPath('data.category.icon_color', '#279112')
+            ->assertJsonPath('data.wallet.id', $wallet->id)
+            ->assertJsonPath('data.wallet.name', $wallet->name)
+            ->assertJsonPath('data.account.id', $account->id)
+            ->assertJsonPath('data.account.name', $account->name)
+            ->assertJsonPath('data.merchant.id', $merchant->id)
+            ->assertJsonPath('data.merchant.name', 'Mercado Central')
+            ->assertJsonPath('data.amount', 18990)
+            ->assertJsonPath('data.description', 'Lançamento')
+            ->assertJsonPath('data.notes', 'Compra detalhada')
+            ->assertJsonPath('data.has_reversal', false);
+
+        $otherWallet = Wallet::create(['name' => 'Outra carteira']);
+        $otherMember = WalletMember::create(['wallet_id' => $otherWallet->id, 'user_id' => User::factory()->create()->id, 'role' => WalletMemberRole::OWNER, 'joined_at' => Carbon::now()]);
+        $otherAccount = $this->account($otherWallet);
+        $otherTransaction = Transaction::create([
+            ...$this->payload($otherWallet, $otherAccount, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, 100),
+            'created_by_member_id' => $otherMember->id,
+            'updated_by_member_id' => $otherMember->id,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/transactions/{$otherTransaction->id}")
+            ->assertForbidden();
     }
 
     public function test_editor_can_create_income_and_expense_and_summary_uses_posted_and_projected_values(): void
