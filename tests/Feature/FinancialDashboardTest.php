@@ -206,6 +206,15 @@ class FinancialDashboardTest extends TestCase
         $this->assertStringContainsString('previous_invoice_usage_percentage', $resource);
     }
 
+    public function test_credit_card_page_exposes_invoice_payment_action(): void
+    {
+        $page = file_get_contents(resource_path('js/Pages/Financial/CreditCards.jsx'));
+
+        $this->assertStringContainsString('canPayCreditCardInvoice', $page);
+        $this->assertStringContainsString('Pagar fatura', $page);
+        $this->assertStringContainsString('onClick={() => onPay(card)}', $page);
+    }
+
     public function test_transaction_list_prefers_category_icon_and_falls_back_to_direction(): void
     {
         $list = file_get_contents(resource_path('js/Pages/Financial/Components/TransactionList.jsx'));
