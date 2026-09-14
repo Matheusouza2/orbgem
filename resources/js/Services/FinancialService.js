@@ -54,6 +54,7 @@ const FinancialService = {
     updateAccount: async (accountId, payload, options = {}) => request(`/api/v1/accounts/${accountId}`, { method: 'PATCH', body: JSON.stringify(payload), ...options }),
     listCreditCards: async (walletId, options = {}) => (await request(`/api/v1/credit-cards?wallet_id=${walletId}`, options)).data,
     listCreditCardTransactions: async (cardId, params = {}, options = {}) => request(`/api/v1/credit-cards/${cardId}/transactions?${new URLSearchParams(params)}`, options),
+    payCreditCardInvoice: async (invoiceId, payload, options = {}) => request(`/api/v1/credit-card-invoices/${invoiceId}/payments`, { method: 'POST', body: JSON.stringify(payload), ...options }),
     createCreditCard: async (payload, options = {}) => request('/api/v1/credit-cards', { method: 'POST', body: JSON.stringify(payload), ...options }),
     createCreditCardPurchase: async (payload, options = {}) => request('/api/v1/credit-card-purchases', { method: 'POST', body: JSON.stringify(payload), ...options }),
     updateCreditCardPurchase: async (purchaseId, payload, options = {}) => request(`/api/v1/credit-card-purchases/${purchaseId}`, { method: 'PUT', body: JSON.stringify(payload), ...options }),

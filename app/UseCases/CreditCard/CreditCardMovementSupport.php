@@ -19,8 +19,8 @@ trait CreditCardMovementSupport
     private function ensureOpenInvoices(iterable $installments): void
     {
         foreach ($installments as $installment) {
-            if ($installment->invoice?->status !== CreditCardInvoiceStatus::OPEN) {
-                throw ValidationException::withMessages(['purchase' => 'Movimentos de faturas fechadas ou pagas não podem ser alterados.']);
+            if ($installment->invoice?->status === CreditCardInvoiceStatus::PAID) {
+                throw ValidationException::withMessages(['purchase' => 'Movimentos de faturas pagas não podem ser alterados.']);
             }
         }
     }

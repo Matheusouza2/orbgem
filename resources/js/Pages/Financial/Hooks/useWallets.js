@@ -5,6 +5,7 @@ import Transaction from '@/Models/Transaction';
 import Wallet from '@/Models/Wallet';
 import FinancialService from '@/Services/FinancialService';
 import { canManageTransaction } from './dashboardState';
+import { buildTransactionUpdatePayload } from './transactionUpdatePayload';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível criar a carteira.' };
 
@@ -211,7 +212,7 @@ export default function useWallets() {
                 effect: transactionForm.data.type === 'INCOME' ? 'CREDIT' : 'DEBIT',
                 financial_instrument_type: 'ACCOUNT',
             };
-            if (editingTransaction) await FinancialService.updateTransaction(editingTransaction.id, payload);
+            if (editingTransaction) await FinancialService.updateTransaction(editingTransaction.id, buildTransactionUpdatePayload(payload));
             else await FinancialService.createTransaction(payload);
             transactionForm.reset();
             setSelectedAccountForTransaction(null);

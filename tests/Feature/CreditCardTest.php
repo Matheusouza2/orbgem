@@ -100,7 +100,10 @@ class CreditCardTest extends TestCase
             ->getJson('/api/v1/credit-cards?wallet_id='.$wallet->id)
             ->assertOk()
             ->assertJsonPath('data.0.current_invoice_amount', 1000)
-            ->assertJsonPath('data.0.limit_usage_percentage', 1);
+            ->assertJsonPath('data.0.limit_usage_percentage', 1)
+            ->assertJsonPath('data.0.current_invoice_id', CreditCardInvoice::query()->where('credit_card_id', $card->id)->value('id'))
+            ->assertJsonPath('data.0.current_invoice_status', CreditCardInvoiceStatus::OPEN->value)
+            ->assertJsonPath('data.0.account_id', null);
     }
 
     public function test_card_list_includes_the_previous_invoice_summary(): void

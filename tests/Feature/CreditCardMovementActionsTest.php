@@ -91,11 +91,23 @@ class CreditCardMovementActionsTest extends TestCase
         $this->assertDatabaseHas('credit_card_purchases', ['id' => $purchase->id]);
     }
 
-    public function test_closed_invoice_rejects_edit_and_delete(): void
+    public function test_closed_invoice_allows_edit_and_delete(): void
     {
         [$user, $wallet, $purchase] = $this->purchaseWithInstallments(1);
         $invoice = CreditCardInvoice::query()->firstOrFail();
         $invoice->update(['status' => CreditCardInvoiceStatus::CLOSED]);
+        $transaction = Transaction::query()->firstOrFail();
+
+        $this->actingAs($user, 'sanctum')->putJson('/api/v1/credit-card-transactions/'.$transaction->id, ['description' => 'Corrigida após fechamento', 'amount' => 999, 'transaction_date' => '2026-09-10'])->assertOk();
+        $this->actingAs($user, 'sanctum')->deleteJson('/api/v1/credit-card-purchases/'.$purchase->id)->assertNoContent();
+        $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
+    }
+
+    public function test_paid_invoice_rejects_edit_and_delete(): void
+    {
+        [$user, $wallet, $purchase] = $this->purchaseWithInstallments(1);
+        $invoice = CreditCardInvoice::query()->firstOrFail();
+        $invoice->update(['status' => CreditCardInvoiceStatus::PAID]);
         $transaction = Transaction::query()->firstOrFail();
 
         $this->actingAs($user, 'sanctum')->putJson('/api/v1/credit-card-transactions/'.$transaction->id, ['description' => 'Bloqueada', 'amount' => 999, 'transaction_date' => '2026-09-10'])->assertUnprocessable();

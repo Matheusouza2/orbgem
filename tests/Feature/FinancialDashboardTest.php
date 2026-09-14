@@ -170,6 +170,8 @@ class FinancialDashboardTest extends TestCase
         foreach (['Editar parcela', 'Editar todas', 'Excluir parcela', 'Excluir todas'] as $label) {
             $this->assertStringContainsString($label, $modal);
         }
+        $this->assertStringContainsString('Total da fatura atual', $modal);
+        $this->assertStringContainsString('current_invoice_amount', $modal);
         foreach (['requestEditInstallment', 'requestEditPurchase', 'requestDeleteInstallment', 'requestDeletePurchase', 'loadCardTransactions(transactionsCard, transactionsFilters)'] as $contract) {
             $this->assertStringContainsString($contract, $hook);
         }

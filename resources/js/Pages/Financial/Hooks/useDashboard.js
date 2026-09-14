@@ -13,6 +13,7 @@ import {
     isCurrentContext,
     normalizeErrors,
 } from './dashboardState';
+import { buildTransactionUpdatePayload } from './transactionUpdatePayload';
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
@@ -189,7 +190,7 @@ export default function useDashboard() {
         event.preventDefault();
         setApiErrors({});
         const requestError = await runAction('transaction', () => {
-            const payload = {
+            const transactionData = {
                 ...form.data,
                 wallet_id: Number(selectedWalletId),
                 account_id: Number(form.data.account_id),
@@ -199,7 +200,7 @@ export default function useDashboard() {
                 financial_instrument_type: 'ACCOUNT',
             };
 
-            if (editingTransaction) return FinancialService.updateTransaction(editingTransaction.id, payload);
+            if (editingTransaction) return FinancialService.updateTransaction(editingTransaction.id, buildTransactionUpdatePayload(transactionData));
 
             if (form.data.financial_instrument_type === 'CREDIT_CARD') {
                 return FinancialService.createCreditCardPurchase({
@@ -214,7 +215,7 @@ export default function useDashboard() {
                 });
             }
 
-            return FinancialService.createTransaction(payload);
+            return FinancialService.createTransaction(transactionData);
         }, reload);
 
         if (requestError) setApiErrors(normalizeErrors(requestError));

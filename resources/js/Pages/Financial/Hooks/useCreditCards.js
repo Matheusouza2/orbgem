@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/react';
 import CreditCard from '@/Models/CreditCard';
 import Transaction from '@/Models/Transaction';
 import FinancialService from '@/Services/FinancialService';
+import { canPayCreditCardInvoice } from './invoiceActions';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível carregar os cartões.' };
 
@@ -29,8 +30,12 @@ export default function useCreditCards() {
     const [selectedCardForTransaction, setSelectedCardForTransaction] = useState(null);
     const [editingCardTransaction, setEditingCardTransaction] = useState(null);
     const [editingCardPurchase, setEditingCardPurchase] = useState(null);
+    const [paymentInvoice, setPaymentInvoice] = useState(null);
+    const [paymentErrors, setPaymentErrors] = useState({});
+    const [paymentSubmitting, setPaymentSubmitting] = useState(false);
     const form = useForm({ ...CreditCard });
     const transactionForm = useForm({ ...Transaction });
+    const paymentForm = useForm({ account_id: '', amount: '', payment_date: new Date().toISOString().slice(0, 10) });
 
     useEffect(() => {
         FinancialService.listWallets().then(async (availableWallets) => {
@@ -88,6 +93,34 @@ export default function useCreditCards() {
     };
 
     const closeTransactionModal = () => { if (!transactionSubmitting) setTransactionModalOpen(false); };
+
+    const openPaymentModal = (card) => {
+        const invoice = { id: card.current_invoice_id, wallet_id: card.wallet_id, reference_month: card.current_invoice_reference_month, status: card.current_invoice_status, amount: card.current_invoice_amount, due_date: card.current_invoice_due_date };
+        if (!canPayCreditCardInvoice(invoice)) return;
+        setPaymentErrors({});
+        setPaymentInvoice(invoice);
+        paymentForm.reset();
+        paymentForm.setData({ account_id: card.account_id ?? accounts.find((account) => account.wallet_id === card.wallet_id)?.id ?? '', amount: (Number(card.current_invoice_amount || 0) / 100).toFixed(2), payment_date: new Date().toISOString().slice(0, 10) });
+    };
+
+    const closePaymentModal = () => { if (!paymentSubmitting) setPaymentInvoice(null); };
+
+    const submitPayment = async (event) => {
+        event.preventDefault();
+        setPaymentErrors({});
+        setPaymentSubmitting(true);
+        try {
+            await FinancialService.payCreditCardInvoice(paymentInvoice.id, { account_id: Number(paymentForm.data.account_id), amount: Math.round(Number(paymentForm.data.amount || 0) * 100), payment_date: paymentForm.data.payment_date });
+            const updatedCards = await FinancialService.listCreditCards(paymentInvoice.wallet_id);
+            setCards((current) => current.map((card) => updatedCards.find((updated) => updated.id === card.id) ?? card));
+            paymentForm.reset();
+            setPaymentInvoice(null);
+        } catch (error) {
+            setPaymentErrors(error?.errors ?? { general: error?.message ?? 'Não foi possível registrar o pagamento.' });
+        } finally {
+            setPaymentSubmitting(false);
+        }
+    };
 
     const openCardEdit = (transaction, purchase = null) => {
         const source = purchase ?? transaction;
@@ -170,5 +203,5 @@ export default function useCreditCards() {
         loadCardTransactions(transactionsCard, filters);
     };
 
-    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit, transactionsCard, cardTransactions, transactionsMeta, transactionsLoading, transactionsError, transactionsFilters, openTransactions, closeTransactions, updateTransactionsFilters, changeTransactionsPage, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedCardForTransaction, editingCardTransaction, editingCardPurchase, requestEditInstallment, requestEditPurchase, requestDeleteInstallment, requestDeletePurchase };
+    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit, transactionsCard, cardTransactions, transactionsMeta, transactionsLoading, transactionsError, transactionsFilters, openTransactions, closeTransactions, updateTransactionsFilters, changeTransactionsPage, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedCardForTransaction, editingCardTransaction, editingCardPurchase, requestEditInstallment, requestEditPurchase, requestDeleteInstallment, requestDeletePurchase, paymentInvoice, paymentForm, paymentErrors, paymentSubmitting, openPaymentModal, closePaymentModal, submitPayment };
 }

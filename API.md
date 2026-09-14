@@ -267,7 +267,7 @@ Consulta o planejamento da carteira. Envie os filtros aceitos pelo endpoint, pri
 
 ### `GET /credit-cards?wallet_id={walletId}`
 
-Campos: `id`, `wallet_id`, `name`, `institution`, `limit`, `current_invoice_amount`, `current_invoice_reference_month`, `limit_usage_percentage`, `closing_day`, `due_day`, `active`, `created_at`.
+Campos: `id`, `wallet_id`, `account_id`, `name`, `institution`, `limit`, `current_invoice_id`, `current_invoice_amount`, `current_invoice_reference_month`, `current_invoice_status`, `current_invoice_due_date`, `limit_usage_percentage`, `closing_day`, `due_day`, `active`, `created_at`.
 
 ### `POST /credit-cards` / `PUT /credit-cards/{creditCard}`
 
