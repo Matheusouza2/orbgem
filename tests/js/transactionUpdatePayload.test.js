@@ -30,3 +30,28 @@ test('removes recurrence and installment fields from account transaction updates
     assert.equal('effect' in payload, false);
     assert.equal('credit_card_id' in payload, false);
 });
+
+test('keeps required values from the original transaction when edit state is empty', () => {
+    const payload = buildTransactionUpdatePayload(
+        {
+            wallet_id: 7,
+            account_id: 9,
+            description: 'Compra corrigida',
+            type: 'EXPENSE',
+            amount: '',
+            financial_instrument_type: 'ACCOUNT',
+            transaction_date: '',
+            competence_date: '',
+            status: 'POSTED',
+        },
+        {
+            amount: 12500,
+            transaction_date: '2026-09-14',
+            competence_date: '2026-09-14',
+        },
+    );
+
+    assert.equal(payload.amount, 12500);
+    assert.equal(payload.transaction_date, '2026-09-14');
+    assert.equal(payload.competence_date, '2026-09-14');
+});

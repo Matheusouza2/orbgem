@@ -212,7 +212,7 @@ export default function useWallets() {
                 effect: transactionForm.data.type === 'INCOME' ? 'CREDIT' : 'DEBIT',
                 financial_instrument_type: 'ACCOUNT',
             };
-            if (editingTransaction) await FinancialService.updateTransaction(editingTransaction.id, buildTransactionUpdatePayload(payload));
+            if (editingTransaction) await FinancialService.updateTransaction(editingTransaction.id, buildTransactionUpdatePayload(payload, editingTransaction));
             else await FinancialService.createTransaction(payload);
             transactionForm.reset();
             setSelectedAccountForTransaction(null);

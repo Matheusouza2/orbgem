@@ -200,7 +200,7 @@ export default function useDashboard() {
                 financial_instrument_type: 'ACCOUNT',
             };
 
-            if (editingTransaction) return FinancialService.updateTransaction(editingTransaction.id, buildTransactionUpdatePayload(transactionData));
+            if (editingTransaction) return FinancialService.updateTransaction(editingTransaction.id, buildTransactionUpdatePayload(transactionData, editingTransaction));
 
             if (form.data.financial_instrument_type === 'CREDIT_CARD') {
                 return FinancialService.createCreditCardPurchase({

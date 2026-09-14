@@ -18,8 +18,13 @@ const UPDATE_FIELDS = [
     'is_third_party',
 ];
 
-export const buildTransactionUpdatePayload = (data) => Object.fromEntries(
+export const buildTransactionUpdatePayload = (data, original = {}) => Object.fromEntries(
     UPDATE_FIELDS
         .filter((field) => Object.prototype.hasOwnProperty.call(data, field))
-        .map((field) => [field, data[field]]),
+        .map((field) => {
+            const value = data[field];
+            const empty = value === null || value === undefined || value === '' || (field === 'amount' && Number(value) <= 0);
+
+            return [field, empty && Object.prototype.hasOwnProperty.call(original, field) ? original[field] : value];
+        }),
 );
