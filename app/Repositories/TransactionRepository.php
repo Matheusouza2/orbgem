@@ -216,4 +216,12 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->whereDate('due_date', '<=', $date)
             ->update(['status' => TransactionStatus::POSTED, 'paid_at' => now()]);
     }
+
+    public function effectivateForInvoice(int $invoiceId, Carbon $paidAt): int
+    {
+        return Transaction::query()
+            ->where('credit_card_invoice_id', $invoiceId)
+            ->where('status', TransactionStatus::PROJECTED)
+            ->update(['status' => TransactionStatus::POSTED, 'paid_at' => $paidAt]);
+    }
 }

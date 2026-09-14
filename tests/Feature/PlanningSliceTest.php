@@ -24,7 +24,7 @@ class PlanningSliceTest extends TestCase
 
     public function test_authenticated_users_can_open_the_recurring_transactions_page(): void
     {
-        [$user] = $this->walletWithMember();
+        [$user] = $this->walletWithMember(WalletMemberRole::OWNER);
 
         $this->actingAs($user)->get('/recorrencias')->assertOk();
     }

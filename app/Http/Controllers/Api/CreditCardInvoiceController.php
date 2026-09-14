@@ -28,6 +28,6 @@ class CreditCardInvoiceController extends Controller
 
     public function pay(PayCreditCardInvoiceRequest $request, int $invoice, PayCreditCardInvoiceUseCase $useCase)
     {
-        return (new CreditCardInvoiceResource($useCase->execute(new PayCreditCardInvoiceDTO($invoice, $request->integer('account_id'), $request->integer('amount'), 0), $request->user())))->response()->setStatusCode(201);
+        return (new CreditCardInvoiceResource($useCase->execute(new PayCreditCardInvoiceDTO($invoice, $request->integer('account_id'), $request->integer('amount'), $request->date('payment_date')->toDateString(), 0), $request->user())))->response()->setStatusCode(201);
     }
 }

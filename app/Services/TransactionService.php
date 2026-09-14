@@ -8,6 +8,7 @@ use App\DTO\TransactionListFilterDTO;
 use App\Models\Transaction;
 use App\Repositories\TransactionRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class TransactionService
@@ -83,5 +84,10 @@ class TransactionService
     public function postDueAutomatically(string $date): int
     {
         return $this->transactionRepository->postDueAutomatically($date);
+    }
+
+    public function effectivateForInvoice(int $invoiceId, Carbon $paidAt): int
+    {
+        return $this->transactionRepository->effectivateForInvoice($invoiceId, $paidAt);
     }
 }

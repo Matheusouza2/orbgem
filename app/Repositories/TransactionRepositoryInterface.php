@@ -7,6 +7,7 @@ use App\DTO\TransactionDTO;
 use App\DTO\TransactionListFilterDTO;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 interface TransactionRepositoryInterface
@@ -39,4 +40,6 @@ interface TransactionRepositoryInterface
     public function commitmentOccurrenceExists(int $commitmentId, int $number): bool;
 
     public function postDueAutomatically(string $date): int;
+
+    public function effectivateForInvoice(int $invoiceId, Carbon $paidAt): int;
 }

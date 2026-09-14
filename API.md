@@ -328,7 +328,7 @@ Sem payload. Fecha a fatura e retorna a fatura atualizada.
 
 ### `POST /credit-card-invoices/{invoice}/payments`
 
-Payload `{ "account_id": 3, "amount": 120000 }`. Registra pagamento usando uma conta da mesma carteira.
+Payload `{ "account_id": 3, "amount": 120000, "payment_date": "2026-09-20" }`. Registra pagamento usando uma conta da mesma carteira e utiliza `payment_date` como a data efetiva do pagamento. O valor deve ser informado em centavos e a data no formato `YYYY-MM-DD`.
 
 ## 8. Investimentos
 

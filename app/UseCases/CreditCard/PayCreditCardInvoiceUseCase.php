@@ -40,10 +40,11 @@ class PayCreditCardInvoiceUseCase
             $paid = $this->payments->totalForInvoice($invoice->id);
             if ($dto->amount <= 0 || $paid + $dto->amount > $total) {
                 throw ValidationException::withMessages(['amount' => 'The payment exceeds the invoice total.']);
-            }$now = Carbon::now();
+            }$now = Carbon::parse($dto->paymentDate)->startOfDay();
             $transaction = $this->transactions->create(TransactionDTO::fromArray(['wallet_id' => $invoice->wallet_id, 'account_id' => $account->id, 'description' => 'Pagamento de fatura '.$invoice->reference_month, 'type' => TransactionType::TRANSFER->value, 'effect' => TransactionEffect::DEBIT->value, 'amount' => $dto->amount, 'financial_instrument_type' => FinancialInstrumentType::ACCOUNT->value, 'transaction_date' => $now->toDateString(), 'competence_date' => $now->toDateString(), 'due_date' => null, 'paid_at' => $now->toDateTimeString(), 'status' => TransactionStatus::POSTED->value, 'credit_card_invoice_id' => $invoice->id], $member->id));
             $this->payments->create(['credit_card_invoice_id' => $invoice->id, 'transaction_id' => $transaction->id, 'amount' => $dto->amount, 'paid_at' => $now]);
             if ($paid + $dto->amount === $total) {
+                $this->transactions->effectivateForInvoice($invoice->id, $now);
                 $invoice->status = CreditCardInvoiceStatus::PAID;
                 $invoice->paid_at = $now;
                 $this->invoices->save($invoice);

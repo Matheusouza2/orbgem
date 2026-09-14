@@ -223,13 +223,13 @@ class CreditCardTest extends TestCase
         $invoice = CreditCardInvoice::query()->where('reference_month', '2026-09')->firstOrFail();
         $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/close')->assertOk();
 
-        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $account->id, 'amount' => 400])->assertCreated();
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $account->id, 'amount' => 400, 'payment_date' => '2026-09-20'])->assertCreated();
         $this->assertDatabaseHas('invoice_payments', ['credit_card_invoice_id' => $invoice->id, 'amount' => 400]);
         $this->assertSame(CreditCardInvoiceStatus::CLOSED, $invoice->fresh()->status);
         $this->assertSame(4600, $this->accountBalance($account));
         $this->assertSame(1, Transaction::query()->where('type', TransactionType::EXPENSE)->count());
 
-        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $account->id, 'amount' => 600])->assertCreated()->assertJsonPath('data.status', CreditCardInvoiceStatus::PAID->value);
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $account->id, 'amount' => 600, 'payment_date' => '2026-09-21'])->assertCreated()->assertJsonPath('data.status', CreditCardInvoiceStatus::PAID->value);
         $this->assertSame(4000, $this->accountBalance($account));
         $this->assertSame(2, Transaction::query()->where('type', TransactionType::TRANSFER)->count());
         $this->assertSame($member->id, Transaction::query()->where('type', TransactionType::TRANSFER)->latest('id')->value('created_by_member_id'));
@@ -245,9 +245,29 @@ class CreditCardTest extends TestCase
         $otherWallet = Wallet::create(['name' => 'Outra']);
         $otherAccount = Account::create(['wallet_id' => $otherWallet->id, 'name' => 'Outra conta', 'type' => AccountType::CHECKING, 'initial_balance' => 5000, 'active' => true]);
 
-        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $otherAccount->id, 'amount' => 100])->assertUnprocessable()->assertJsonValidationErrors('account_id');
-        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $account->id, 'amount' => 1001])->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $otherAccount->id, 'amount' => 100, 'payment_date' => '2026-09-20'])->assertUnprocessable()->assertJsonValidationErrors('account_id');
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $account->id, 'amount' => 1001, 'payment_date' => '2026-09-20'])->assertUnprocessable()->assertJsonValidationErrors('amount');
         $this->assertDatabaseCount('invoice_payments', 0);
+    }
+
+    public function test_full_invoice_payment_uses_the_payment_date_and_effectivates_invoice_transactions(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $card = $this->creditCard($wallet);
+        $account = Account::create(['wallet_id' => $wallet->id, 'name' => 'Conta', 'type' => AccountType::CHECKING, 'initial_balance' => 5000, 'active' => true]);
+        $this->createPurchase($user, $wallet, $card);
+        $invoice = CreditCardInvoice::query()->where('reference_month', '2026-09')->firstOrFail();
+        $transactionId = Transaction::query()->where('credit_card_invoice_id', $invoice->id)->value('id');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', ['account_id' => $account->id, 'amount' => 1000, 'payment_date' => '2026-09-20'])
+            ->assertCreated()
+            ->assertJsonPath('data.status', CreditCardInvoiceStatus::PAID->value);
+
+        $this->assertDatabaseHas('transactions', ['id' => $transactionId, 'status' => TransactionStatus::POSTED->value, 'paid_at' => '2026-09-20 00:00:00']);
+        $payment = Transaction::query()->where('description', 'Pagamento de fatura 2026-09')->latest('id')->firstOrFail();
+        $this->assertSame('2026-09-20', $payment->transaction_date->toDateString());
+        $this->assertSame('2026-09-20', $payment->competence_date->toDateString());
     }
 
     /** @return array{User, Wallet, WalletMember} */

@@ -13,6 +13,6 @@ class PayCreditCardInvoiceRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['account_id' => ['required', 'integer', 'exists:accounts,id'], 'amount' => ['required', 'integer', 'min:1']];
+        return ['account_id' => ['required', 'integer', 'exists:accounts,id'], 'amount' => ['required', 'integer', 'min:1'], 'payment_date' => ['required', 'date']];
     }
 }
