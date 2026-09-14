@@ -57,7 +57,6 @@ class UpdateTransactionUseCase
     {
         if ($transaction->financial_instrument_type !== FinancialInstrumentType::ACCOUNT
             || $transaction->type === TransactionType::TRANSFER
-            || $transaction->effect === TransactionEffect::NONE
             || $transaction->reversal_of_transaction_id !== null
             || $transaction->transfer_group_id !== null
             || $transaction->installment_id !== null

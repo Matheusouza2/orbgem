@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { canEditCreditCardTransaction } from '../../resources/js/Pages/Financial/Hooks/transactionActions.js';
+import { canManageTransaction } from '../../resources/js/Pages/Financial/Hooks/dashboardState.js';
 
 test('allows editing an open internal card movement from its installment and purchase data', () => {
     assert.equal(canEditCreditCardTransaction({
@@ -56,4 +57,20 @@ test('does not allow editing a movement from a paid card invoice', () => {
         installment: { number: 1, total: 1 },
         invoice: { status: 'paid' },
     }), false);
+});
+
+test('allows managing an account transaction even when it has no effect', () => {
+    assert.equal(canManageTransaction({
+        financial_instrument_type: 'ACCOUNT',
+        effect: 'NONE',
+        type: 'EXPENSE',
+    }), true);
+});
+
+test('allows editing a standalone card transaction from an unpaid invoice', () => {
+    assert.equal(canEditCreditCardTransaction({
+        can_edit: true,
+        can_delete: true,
+        invoice: { status: 'OPEN' },
+    }), true);
 });

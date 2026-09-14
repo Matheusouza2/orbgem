@@ -2,10 +2,12 @@
 
 namespace App\UseCases\CreditCard;
 
+use App\Enums\WalletMemberRole;
 use App\Models\Installment;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\InstallmentService;
+use App\Services\WalletMembershipAuthorization;
 use Illuminate\Support\Facades\DB;
 
 class DeleteCreditCardInstallmentUseCase
@@ -18,6 +20,17 @@ class DeleteCreditCardInstallmentUseCase
     {
         DB::transaction(function () use ($transactionId, $user): void {
             $transaction = Transaction::query()->lockForUpdate()->find($transactionId);
+            if ($transaction !== null && $transaction->installment_id === null && $this->isStandaloneCardTransaction($transaction)) {
+                $invoice = $transaction->creditCardInvoice()->lockForUpdate()->first();
+                if ($invoice === null) {
+                    abort(404);
+                }
+                $this->ensureOpenInvoices([$invoice]);
+                $this->authorizeImportedTransaction($invoice, $user);
+                $transaction->delete();
+
+                return;
+            }
             if ($transaction === null || $transaction->installment_id === null) {
                 abort(404);
             }
@@ -44,5 +57,16 @@ class DeleteCreditCardInstallmentUseCase
                 }
             }
         });
+    }
+
+    private function isStandaloneCardTransaction(Transaction $transaction): bool
+    {
+        return $transaction->credit_card_invoice_id !== null
+            && $transaction->financial_instrument_type->value === 'CREDIT_CARD';
+    }
+
+    private function authorizeImportedTransaction($invoice, User $user): void
+    {
+        app(WalletMembershipAuthorization::class)->authorize($user, $invoice->wallet, WalletMemberRole::OWNER, WalletMemberRole::EDITOR);
     }
 }

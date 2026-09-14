@@ -70,6 +70,7 @@ class TransactionRepository implements TransactionRepositoryInterface
     {
         $query = Transaction::query()
             ->withExists('reversals')
+            ->with('externalTransactions')
             ->where('wallet_id', $filters->walletId)
             ->when(! $filters->includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->orderBy($filters->sortBy, $filters->sortDirection)

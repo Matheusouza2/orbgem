@@ -2,10 +2,12 @@
 
 namespace App\UseCases\CreditCard;
 
+use App\Enums\WalletMemberRole;
 use App\Models\Installment;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\InstallmentService;
+use App\Services\WalletMembershipAuthorization;
 use Illuminate\Support\Facades\DB;
 
 class UpdateCreditCardInstallmentUseCase
@@ -18,6 +20,21 @@ class UpdateCreditCardInstallmentUseCase
     {
         return DB::transaction(function () use ($transactionId, $attributes, $user): Transaction {
             $transaction = Transaction::query()->lockForUpdate()->find($transactionId);
+            if ($transaction !== null && $transaction->installment_id === null && $this->isStandaloneCardTransaction($transaction)) {
+                $invoice = $transaction->creditCardInvoice()->lockForUpdate()->first();
+                if ($invoice === null) {
+                    abort(404);
+                }
+                $this->ensureOpenInvoices([$invoice]);
+                app(WalletMembershipAuthorization::class)->authorize($user, $invoice->wallet, WalletMemberRole::OWNER, WalletMemberRole::EDITOR);
+                $transaction->update([
+                    'description' => $attributes['description'], 'amount' => $attributes['amount'],
+                    'transaction_date' => $attributes['transaction_date'], 'category_id' => $attributes['category_id'] ?? null,
+                    'merchant_id' => $attributes['merchant_id'] ?? null, 'is_third_party' => (bool) ($attributes['is_third_party'] ?? false),
+                ]);
+
+                return $transaction->fresh();
+            }
             if ($transaction === null || $transaction->installment_id === null) {
                 abort(404);
             }
@@ -36,5 +53,11 @@ class UpdateCreditCardInstallmentUseCase
 
             return $transaction->fresh();
         });
+    }
+
+    private function isStandaloneCardTransaction(Transaction $transaction): bool
+    {
+        return $transaction->credit_card_invoice_id !== null
+            && $transaction->financial_instrument_type->value === 'CREDIT_CARD';
     }
 }

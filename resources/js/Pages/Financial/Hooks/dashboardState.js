@@ -26,7 +26,6 @@ export const canReverseTransaction = (transaction) => (
 
 export const canManageTransaction = (transaction) => (
     transaction.financial_instrument_type === 'ACCOUNT'
-    && transaction.effect !== 'NONE'
     && transaction.type !== 'TRANSFER'
     && !transaction.reversal_of_transaction_id
     && !transaction.transfer_group_id
