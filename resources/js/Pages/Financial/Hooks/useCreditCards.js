@@ -4,6 +4,7 @@ import CreditCard from '@/Models/CreditCard';
 import Transaction from '@/Models/Transaction';
 import FinancialService from '@/Services/FinancialService';
 import { canPayCreditCardInvoice } from './invoiceActions';
+import { buildCreditCardInstallmentUpdatePayload } from './creditCardTransactionPayload';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível carregar os cartões.' };
 
@@ -154,7 +155,7 @@ export default function useCreditCards() {
                 total_amount: Math.round(Number(transactionForm.data.amount || 0) * 100),
                 installment_count: transactionForm.data.recurrence_type === 'INSTALLMENT' ? Number(transactionForm.data.installment_count) : 1,
             };
-            if (editingCardTransaction) await FinancialService.updateCreditCardInstallment(editingCardTransaction.id, payload);
+            if (editingCardTransaction) await FinancialService.updateCreditCardInstallment(editingCardTransaction.id, buildCreditCardInstallmentUpdatePayload(transactionForm.data));
             else if (editingCardPurchase) await FinancialService.updateCreditCardPurchase(editingCardPurchase.id, { description: payload.description, purchase_date: payload.purchase_date, total_amount: payload.total_amount, category_id: payload.category_id, merchant_id: payload.merchant_id, is_third_party: payload.is_third_party });
             else await FinancialService.createCreditCardPurchase(payload);
             transactionForm.reset();
