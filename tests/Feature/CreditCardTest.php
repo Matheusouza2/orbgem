@@ -141,6 +141,36 @@ class CreditCardTest extends TestCase
             ->assertJsonPath('data.0.previous_invoice_usage_percentage', 2.5);
     }
 
+    public function test_card_list_uses_the_current_open_invoice_instead_of_the_latest_future_invoice(): void
+    {
+        Carbon::setTestNow('2026-09-14');
+
+        try {
+            [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+            $card = $this->creditCard($wallet);
+
+            foreach ([['date' => '2026-08-10', 'amount' => 1000], ['date' => '2026-09-10', 'amount' => 2000], ['date' => '2026-10-10', 'amount' => 3000]] as $purchase) {
+                $this->actingAs($user, 'sanctum')->postJson('/api/v1/credit-card-purchases', [
+                    'wallet_id' => $wallet->id,
+                    'credit_card_id' => $card->id,
+                    'description' => 'Compra '.$purchase['date'],
+                    'purchase_date' => $purchase['date'],
+                    'total_amount' => $purchase['amount'],
+                    'installment_count' => 1,
+                ])->assertCreated();
+            }
+
+            $this->actingAs($user, 'sanctum')
+                ->getJson('/api/v1/credit-cards?wallet_id='.$wallet->id)
+                ->assertOk()
+                ->assertJsonPath('data.0.current_invoice_reference_month', '2026-09')
+                ->assertJsonPath('data.0.current_invoice_amount', 2000)
+                ->assertJsonPath('data.0.previous_invoice_amount', 1000);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_purchase_uses_informed_due_date_to_select_the_invoice(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Transaction;
+use App\Enums\CreditCardInvoiceStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,10 +12,22 @@ class CreditCardResource extends JsonResource
     public function toArray(Request $request): array
     {
         $invoices = $this->invoices?->sortByDesc('reference_month') ?? collect();
-        $currentInvoice = $invoices->first(fn ($invoice): bool => $invoice->status?->value !== 'PAID');
-        $previousInvoice = $currentInvoice === null ? null : $invoices->first(function ($invoice) use ($currentInvoice): bool {
-            return $invoice->reference_month < $currentInvoice->reference_month;
-        });
+        $openInvoices = $invoices
+            ->filter(fn ($invoice): bool => $invoice->status === CreditCardInvoiceStatus::OPEN)
+            ->sortBy('reference_month');
+        $currentMonth = now()->format('Y-m');
+        $currentInvoice = $openInvoices
+            ->first(fn ($invoice): bool => $invoice->reference_month >= $currentMonth)
+            ?? $openInvoices->last()
+            ?? $invoices
+                ->filter(fn ($invoice): bool => $invoice->status !== CreditCardInvoiceStatus::PAID)
+                ->first();
+        $previousInvoice = $currentInvoice === null ? null : $invoices
+            ->filter(function ($invoice) use ($currentInvoice): bool {
+                return $invoice->reference_month < $currentInvoice->reference_month;
+            })
+            ->sortByDesc('reference_month')
+            ->first();
         $invoiceAmount = $this->invoiceAmount($currentInvoice);
         $previousInvoiceAmount = $this->invoiceAmount($previousInvoice);
         $limit = (int) $this->credit_limit;
