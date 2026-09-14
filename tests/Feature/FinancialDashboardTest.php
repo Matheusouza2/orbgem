@@ -91,6 +91,51 @@ class FinancialDashboardTest extends TestCase
             ->assertJsonPath('data.forecast_expenses', 0);
     }
 
+    public function test_summary_and_account_list_use_the_selected_competence_as_cutoff(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::query()->create(['name' => 'Carteira principal']);
+        WalletMember::query()->create(['wallet_id' => $wallet->id, 'user_id' => $user->id, 'role' => WalletMemberRole::EDITOR, 'joined_at' => now()]);
+        $account = Account::query()->create(['wallet_id' => $wallet->id, 'name' => 'Conta corrente', 'type' => 'CHECKING', 'initial_balance' => 10000, 'active' => true]);
+
+        foreach ([
+            ['amount' => 2500, 'effect' => TransactionEffect::CREDIT, 'date' => '2026-09-07'],
+            ['amount' => 500, 'effect' => TransactionEffect::DEBIT, 'date' => '2026-09-20'],
+            ['amount' => 900, 'effect' => TransactionEffect::CREDIT, 'date' => '2026-10-02'],
+        ] as $movement) {
+            $this->actingAs($user)->postJson('/api/v1/transactions', [
+                'wallet_id' => $wallet->id, 'account_id' => $account->id, 'description' => 'Movimento',
+                'type' => $movement['effect'] === TransactionEffect::CREDIT ? TransactionType::INCOME->value : TransactionType::EXPENSE->value,
+                'effect' => $movement['effect']->value, 'amount' => $movement['amount'],
+                'financial_instrument_type' => FinancialInstrumentType::ACCOUNT->value,
+                'transaction_date' => $movement['date'], 'competence_date' => $movement['date'],
+                'status' => TransactionStatus::POSTED->value,
+            ])->assertCreated();
+        }
+
+        $this->actingAs($user)->getJson('/api/v1/monthly-summary?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()->assertJsonPath('data.balance', 12000);
+
+        $this->actingAs($user)->getJson('/api/v1/accounts?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()->assertJsonPath('data.0.dashboard_balance', 12000);
+    }
+
+    public function test_dashboard_frontend_requests_and_renders_competence_scoped_values(): void
+    {
+        $hook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useDashboard.js'));
+        $service = file_get_contents(resource_path('js/Services/FinancialService.js'));
+        $insights = file_get_contents(resource_path('js/Pages/Financial/Components/DashboardInsights.jsx'));
+
+        $this->assertStringContainsString('listAccounts(selectedWalletId, { signal: controller.signal, month })', $hook);
+        $this->assertStringContainsString('listCreditCards(selectedWalletId, { signal: controller.signal, month })', $hook);
+        $this->assertStringContainsString("params.set('month', month)", $service);
+        $this->assertStringContainsString('account.dashboard_balance', $insights);
+        $this->assertStringContainsString('card.dashboard_balance', $insights);
+        $this->assertStringContainsString('summary.expense_by_category', $insights);
+        $this->assertStringContainsString('summary.expense_status_breakdown', $insights);
+        $this->assertStringContainsString('summary.income_status_breakdown', $insights);
+    }
+
     public function test_dashboard_frontend_exposes_daily_movement_flows_through_its_layers(): void
     {
         $dashboard = file_get_contents(resource_path('js/Pages/Financial/Dashboard.jsx'));
@@ -170,7 +215,7 @@ class FinancialDashboardTest extends TestCase
         foreach (['Editar parcela', 'Editar todas', 'Excluir parcela', 'Excluir todas'] as $label) {
             $this->assertStringContainsString($label, $modal);
         }
-        $this->assertStringContainsString('Total da fatura atual', $modal);
+        $this->assertStringContainsString('Total da competência', $modal);
         $this->assertStringContainsString('current_invoice_amount', $modal);
         foreach (['requestEditInstallment', 'requestEditPurchase', 'requestDeleteInstallment', 'requestDeletePurchase', 'loadCardTransactions(transactionsCard, transactionsFilters)'] as $contract) {
             $this->assertStringContainsString($contract, $hook);

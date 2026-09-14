@@ -37,8 +37,8 @@ function classifyTransactions(transactions, type) {
     return groups;
 }
 
-function StatusCard({ type, transactions }) {
-    const groups = classifyTransactions(transactions, type);
+function StatusCard({ type, summary }) {
+    const groups = type === 'EXPENSE' ? (summary.expense_status_breakdown || {}) : (summary.income_status_breakdown || {});
     const total = Object.values(groups).reduce((sum, amount) => sum + amount, 0);
     const labels = { posted: 'Efetivadas', upcoming: 'Próximo do vencimento', overdue: 'Vencidas', distant: 'Distante do vencimento' };
 
@@ -52,10 +52,8 @@ function EconomyChart({ summary, previousSummary }) {
     return <article className="dashboard-insight-card dashboard-economy-card"><CardHeading eyebrow="Economia mensal" title="Receita contra despesa" detail="valores efetivados" /><div className="dashboard-economy-legend"><span><i className="dashboard-legend-dot dashboard-legend-dot--income" />Receitas</span><span><i className="dashboard-legend-dot dashboard-legend-dot--expense" />Despesas</span></div><div className="dashboard-economy-chart">{periods.map(({ label, data }) => { const income = Number(data.actual_income || 0); const expenses = Number(data.actual_expenses || 0); const savings = income > 0 ? ((income - expenses) / income) * 100 : 0; return <div className="dashboard-economy-period" key={label}><div className="dashboard-economy-bars"><span className="dashboard-economy-bar dashboard-economy-bar--income" style={{ height: `${Math.max(income > 0 ? 5 : 0, (income / max) * 100)}%` }} /><span className="dashboard-economy-bar dashboard-economy-bar--expense" style={{ height: `${Math.max(expenses > 0 ? 5 : 0, (expenses / max) * 100)}%` }} /></div><strong className={savings >= 0 ? 'text-emerald-700' : 'text-rose-700'}>{savings >= 0 ? '+' : ''}{percent(savings)}</strong><small>{label}</small></div>; })}</div></article>;
 }
 
-function CategoryChart({ transactions, categories }) {
-    const categoryMap = new Map(categories.map((category) => [String(category.id), category.name]));
-    const grouped = transactions.filter((transaction) => transaction.type === 'EXPENSE' && transaction.status === 'POSTED').reduce((result, transaction) => { const name = categoryMap.get(String(transaction.category_id)) || 'Sem categoria'; result[name] = (result[name] || 0) + Number(transaction.amount || 0); return result; }, {});
-    const rows = Object.entries(grouped).sort(([, first], [, second]) => second - first).slice(0, 5);
+function CategoryChart({ summary }) {
+    const rows = (summary.expense_by_category || []).map((row) => [row.category_name, Number(row.amount || 0)]).slice(0, 5);
     const total = rows.reduce((sum, [, amount]) => sum + amount, 0);
     const max = rows[0]?.[1] || 0;
 
@@ -70,9 +68,9 @@ function BalanceCard({ title, eyebrow, icon: Icon, items, valueKey, emptyLabel }
 
 export default function DashboardInsights({ summary, previousSummary, transactions, categories, accounts, creditCards }) {
     const transfers = transactions.filter((transaction) => transaction.type === 'TRANSFER' && transaction.effect === 'DEBIT').reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
-    const cardTotal = creditCards.reduce((sum, card) => sum + Number(card.current_invoice_amount || 0), 0);
-    const accountItems = accounts.filter((account) => account.show_in_dashboard !== false && account.ignore_in_totals !== true).map((account) => ({ ...account, dashboard_balance: account.pluggy_balance ?? account.initial_balance ?? 0 }));
-    const cardItems = creditCards.filter((card) => card.active !== false).map((card) => ({ ...card, dashboard_balance: card.current_invoice_amount ?? 0 }));
+    const cardTotal = creditCards.reduce((sum, card) => sum + Number(card.dashboard_balance || 0), 0);
+    const accountItems = accounts.filter((account) => account.show_in_dashboard !== false && account.ignore_in_totals !== true).map((account) => ({ ...account, dashboard_balance: account.dashboard_balance ?? 0 }));
+    const cardItems = creditCards.filter((card) => card.active !== false).map((card) => ({ ...card, dashboard_balance: card.dashboard_balance ?? 0 }));
 
-    return <div className="dashboard-insights"><section className="dashboard-insight-card dashboard-values-card"><CardHeading eyebrow="Visão geral" title="Os números que movem o mês" detail="valores reais" /><div className="dashboard-values-grid"><ValueItem icon={ArrowDownLeft} label="Receitas" value={summary.actual_income} tone="dashboard-value--income" /><ValueItem icon={ArrowUpRight} label="Despesas" value={summary.actual_expenses} tone="dashboard-value--expense" /><ValueItem icon={MoveRight} label="Transferências" value={transfers} /><ValueItem icon={WalletCards} label="Balanço" value={summary.balance} tone={summary.balance >= 0 ? 'dashboard-value--income' : 'dashboard-value--expense'} /><ValueItem icon={CreditCard} label="Cartões" value={cardTotal} tone="dashboard-value--expense" /></div></section><div className="dashboard-insight-grid dashboard-insight-grid--balances"><BalanceCard eyebrow="Contas" title="Saldo por conta" icon={Landmark} items={accountItems} valueKey="dashboard_balance" emptyLabel="Nenhuma conta disponível." /><BalanceCard eyebrow="Cartões de crédito" title="Saldo por cartão" icon={CreditCard} items={cardItems} valueKey="dashboard_balance" emptyLabel="Nenhum cartão disponível." /></div><div className="dashboard-insight-grid"><EconomyChart summary={summary} previousSummary={previousSummary} /><CategoryChart transactions={transactions} categories={categories} /></div><div className="dashboard-insight-grid"><StatusCard type="EXPENSE" transactions={transactions} /><StatusCard type="INCOME" transactions={transactions} /></div></div>;
+    return <div className="dashboard-insights"><section className="dashboard-insight-card dashboard-values-card"><CardHeading eyebrow="Visão geral" title="Os números que movem o mês" detail="competência selecionada" /><div className="dashboard-values-grid"><ValueItem icon={ArrowDownLeft} label="Receitas" value={summary.actual_income} tone="dashboard-value--income" /><ValueItem icon={ArrowUpRight} label="Despesas" value={summary.actual_expenses} tone="dashboard-value--expense" /><ValueItem icon={MoveRight} label="Transferências" value={transfers} /><ValueItem icon={WalletCards} label="Balanço" value={summary.balance} tone={summary.balance >= 0 ? 'dashboard-value--income' : 'dashboard-value--expense'} /><ValueItem icon={CreditCard} label="Cartões" value={cardTotal} tone="dashboard-value--expense" /></div></section><div className="dashboard-insight-grid dashboard-insight-grid--balances"><BalanceCard eyebrow="Contas" title="Saldo por conta" icon={Landmark} items={accountItems} valueKey="dashboard_balance" emptyLabel="Nenhuma conta disponível." /><BalanceCard eyebrow="Cartões de crédito" title="Saldo por cartão" icon={CreditCard} items={cardItems} valueKey="dashboard_balance" emptyLabel="Nenhum cartão disponível." /></div><div className="dashboard-insight-grid"><EconomyChart summary={summary} previousSummary={previousSummary} /><CategoryChart summary={summary} /></div><div className="dashboard-insight-grid"><StatusCard type="EXPENSE" summary={summary} /><StatusCard type="INCOME" summary={summary} /></div></div>;
 }

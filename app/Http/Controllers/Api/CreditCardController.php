@@ -27,12 +27,14 @@ class CreditCardController extends Controller
 
     public function index(Request $request, ListCreditCardsUseCase $useCase)
     {
-        return CreditCardResource::collection($useCase->execute($request->integer('wallet_id'), $request->user()));
+        return CreditCardResource::collection($useCase->execute($request->integer('wallet_id'), $request->user(), $request->input('month')));
     }
 
     public function transactions(ListCreditCardTransactionsRequest $request, CreditCard $creditCard, ListCreditCardTransactionsUseCase $useCase)
     {
-        return CreditCardTransactionResource::collection($useCase->execute(CreditCardTransactionListDTO::fromArray($request->validated(), $creditCard->id), $creditCard, $request->user()));
+        $result = $useCase->execute(CreditCardTransactionListDTO::fromArray($request->validated(), $creditCard->id), $creditCard, $request->user());
+
+        return CreditCardTransactionResource::collection($result->transactions)->additional(['invoice_amount' => $result->amount]);
     }
 
     public function update(CreateCreditCardRequest $request, CreditCard $creditCard, UpdateCreditCardUseCase $useCase): CreditCardResource

@@ -23,6 +23,7 @@ class AccountResource extends JsonResource
             'pluggy_item_id' => $this->pluggy_item_id,
             'pluggy_account_id' => $this->pluggy_account_id,
             'pluggy_balance' => $this->pluggy_balance,
+            'dashboard_balance' => $this->when(array_key_exists('dashboard_balance', $this->resource->getAttributes()), fn (): int => (int) $this->dashboard_balance),
             'is_default' => $this->is_default,
             'show_in_dashboard' => $this->show_in_dashboard,
             'ignore_in_totals' => $this->ignore_in_totals,

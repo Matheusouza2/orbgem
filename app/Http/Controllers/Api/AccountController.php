@@ -29,7 +29,7 @@ class AccountController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return AccountResource::collection($useCase->execute($request->integer('wallet_id'), $user));
+        return AccountResource::collection($useCase->execute($request->integer('wallet_id'), $user, $request->input('month')));
     }
 
     public function update(int $account, UpdateAccountRequest $request, UpdateAccountUseCase $useCase): AccountResource

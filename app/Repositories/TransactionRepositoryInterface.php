@@ -35,6 +35,8 @@ interface TransactionRepositoryInterface
 
     public function postedAmountsForAccount(int $accountId, bool $includeThirdParty = true): Collection;
 
+    public function postedAmountsForAccountThroughMonth(int $accountId, string $month, bool $includeThirdParty = true): Collection;
+
     public function recurringOccurrenceExists(int $recurringId, string $date): bool;
 
     public function commitmentOccurrenceExists(int $commitmentId, int $number): bool;

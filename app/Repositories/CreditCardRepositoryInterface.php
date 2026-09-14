@@ -23,4 +23,6 @@ interface CreditCardRepositoryInterface
     public function delete(CreditCard $card): void;
 
     public function transactions(CreditCardTransactionListDTO $dto): LengthAwarePaginator;
+
+    public function transactionsAmount(CreditCardTransactionListDTO $dto): int;
 }

@@ -71,6 +71,11 @@ class TransactionService
         return $this->transactionRepository->postedAmountsForAccount($accountId, $includeThirdParty);
     }
 
+    public function postedAmountsForAccountThroughMonth(int $accountId, string $month, bool $includeThirdParty = true): Collection
+    {
+        return $this->transactionRepository->postedAmountsForAccountThroughMonth($accountId, $month, $includeThirdParty);
+    }
+
     public function recurringOccurrenceExists(int $recurringId, string $date): bool
     {
         return $this->transactionRepository->recurringOccurrenceExists($recurringId, $date);

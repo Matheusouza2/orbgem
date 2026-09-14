@@ -102,8 +102,8 @@ export default function useDashboard() {
         setError('');
 
         Promise.all([
-            FinancialService.listAccounts(selectedWalletId, { signal: controller.signal }),
-            FinancialService.listCreditCards(selectedWalletId, { signal: controller.signal }),
+            FinancialService.listAccounts(selectedWalletId, { signal: controller.signal, month }),
+            FinancialService.listCreditCards(selectedWalletId, { signal: controller.signal, month }),
             FinancialService.listMerchants(selectedWalletId, { signal: controller.signal }),
             FinancialService.listCategories(selectedWalletId, { signal: controller.signal }),
             FinancialService.listTransactions(selectedWalletId, selectedAccountId, month, { signal: controller.signal }),
@@ -143,8 +143,8 @@ export default function useDashboard() {
         if (!selectedWalletId) return;
 
         const [availableAccounts, availableCreditCards, availableMerchants, availableCategories, availableTransactions, availableSummary, availablePreviousSummary, availableNextSummary] = await Promise.all([
-            FinancialService.listAccounts(selectedWalletId),
-            FinancialService.listCreditCards(selectedWalletId),
+            FinancialService.listAccounts(selectedWalletId, { month }),
+            FinancialService.listCreditCards(selectedWalletId, { month }),
             FinancialService.listMerchants(selectedWalletId),
             FinancialService.listCategories(selectedWalletId),
             FinancialService.listTransactions(selectedWalletId, selectedAccountId, month),

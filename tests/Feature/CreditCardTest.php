@@ -106,6 +106,18 @@ class CreditCardTest extends TestCase
             ->assertJsonPath('data.0.account_id', null);
     }
 
+    public function test_card_list_exposes_the_selected_competence_amount(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $card = $this->creditCard($wallet);
+        $this->createPurchase($user, $wallet, $card);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.0.dashboard_balance', 1000);
+    }
+
     public function test_card_list_includes_the_previous_invoice_summary(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
@@ -174,6 +186,7 @@ class CreditCardTest extends TestCase
         $this->actingAs($user, 'sanctum')->getJson('/api/v1/credit-cards/'.$card->id.'/transactions?wallet_id='.$wallet->id.'&month=2026-09&per_page=10')
             ->assertOk()
             ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('invoice_amount', 3500)
             ->assertJsonFragment(['description' => 'Compra importada'])
             ->assertJsonFragment(['description' => 'Compra (1/1)']);
     }

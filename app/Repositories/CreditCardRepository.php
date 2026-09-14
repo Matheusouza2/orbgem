@@ -7,6 +7,7 @@ use App\DTO\CreditCardTransactionListDTO;
 use App\Models\CreditCard;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -49,6 +50,17 @@ class CreditCardRepository implements CreditCardRepositoryInterface
 
     public function transactions(CreditCardTransactionListDTO $dto): LengthAwarePaginator
     {
+        return $this->transactionQuery($dto)
+            ->paginate($dto->perPage, ['*'], 'page', $dto->page);
+    }
+
+    public function transactionsAmount(CreditCardTransactionListDTO $dto): int
+    {
+        return (int) $this->transactionQuery($dto)->sum('amount');
+    }
+
+    private function transactionQuery(CreditCardTransactionListDTO $dto): Builder
+    {
         $query = Transaction::query()
             ->with(['creditCardInvoice', 'installment.purchase', 'externalTransactions'])
             ->where('wallet_id', $dto->walletId)
@@ -66,6 +78,6 @@ class CreditCardRepository implements CreditCardRepositoryInterface
             $query->whereBetween('competence_date', [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()]);
         }
 
-        return $query->paginate($dto->perPage, ['*'], 'page', $dto->page);
+        return $query;
     }
 }

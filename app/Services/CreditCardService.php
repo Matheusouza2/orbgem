@@ -47,4 +47,9 @@ class CreditCardService
     {
         return $this->repository->transactions($dto);
     }
+
+    public function transactionsAmount(CreditCardTransactionListDTO $dto): int
+    {
+        return $this->repository->transactionsAmount($dto);
+    }
 }

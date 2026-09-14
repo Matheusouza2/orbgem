@@ -49,10 +49,20 @@ const FinancialService = {
     listWallets: async (options = {}) => (await request('/api/v1/wallets', options)).data,
     createWallet: async (payload, options = {}) => request('/api/v1/wallets', { method: 'POST', body: JSON.stringify(payload), ...options }),
     updateWallet: async (walletId, payload, options = {}) => request(`/api/v1/wallets/${walletId}`, { method: 'PATCH', body: JSON.stringify(payload), ...options }),
-    listAccounts: async (walletId, options = {}) => (await request(`/api/v1/accounts?wallet_id=${walletId}`, options)).data,
+    listAccounts: async (walletId, options = {}) => {
+        const { month, ...requestOptions } = options;
+        const params = new URLSearchParams({ wallet_id: String(walletId) });
+        if (month) params.set('month', month);
+        return (await request(`/api/v1/accounts?${params.toString()}`, requestOptions)).data;
+    },
     createAccount: async (payload, options = {}) => request('/api/v1/accounts', { method: 'POST', body: JSON.stringify(payload), ...options }),
     updateAccount: async (accountId, payload, options = {}) => request(`/api/v1/accounts/${accountId}`, { method: 'PATCH', body: JSON.stringify(payload), ...options }),
-    listCreditCards: async (walletId, options = {}) => (await request(`/api/v1/credit-cards?wallet_id=${walletId}`, options)).data,
+    listCreditCards: async (walletId, options = {}) => {
+        const { month, ...requestOptions } = options;
+        const params = new URLSearchParams({ wallet_id: String(walletId) });
+        if (month) params.set('month', month);
+        return (await request(`/api/v1/credit-cards?${params.toString()}`, requestOptions)).data;
+    },
     listCreditCardTransactions: async (cardId, params = {}, options = {}) => request(`/api/v1/credit-cards/${cardId}/transactions?${new URLSearchParams(params)}`, options),
     payCreditCardInvoice: async (invoiceId, payload, options = {}) => request(`/api/v1/credit-card-invoices/${invoiceId}/payments`, { method: 'POST', body: JSON.stringify(payload), ...options }),
     createCreditCard: async (payload, options = {}) => request('/api/v1/credit-cards', { method: 'POST', body: JSON.stringify(payload), ...options }),

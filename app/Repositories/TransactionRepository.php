@@ -199,6 +199,18 @@ class TransactionRepository implements TransactionRepositoryInterface
         return Transaction::query()->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('account_id', $accountId)->where('status', TransactionStatus::POSTED)->get(['effect', 'amount']);
     }
 
+    public function postedAmountsForAccountThroughMonth(int $accountId, string $month, bool $includeThirdParty = true): Collection
+    {
+        [, $end] = $this->monthBounds($month);
+
+        return Transaction::query()
+            ->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))
+            ->where('account_id', $accountId)
+            ->where('status', TransactionStatus::POSTED)
+            ->where('competence_date', '<', $end)
+            ->get(['effect', 'amount']);
+    }
+
     public function recurringOccurrenceExists(int $recurringId, string $date): bool
     {
         return Transaction::query()->where('recurring_transaction_id', $recurringId)->whereDate('transaction_date', $date)->exists();
