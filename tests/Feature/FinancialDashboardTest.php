@@ -210,7 +210,7 @@ class FinancialDashboardTest extends TestCase
     {
         $page = file_get_contents(resource_path('js/Pages/Financial/CreditCards.jsx'));
 
-        $this->assertStringContainsString('canPayCreditCardInvoice', $page);
+        $this->assertStringContainsString('shouldShowCreditCardInvoicePaymentAction', $page);
         $this->assertStringContainsString('Pagar fatura', $page);
         $this->assertStringContainsString('onClick={() => onPay(card)}', $page);
     }

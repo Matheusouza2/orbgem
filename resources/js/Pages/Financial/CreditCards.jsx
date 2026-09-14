@@ -7,7 +7,7 @@ import CreditCardTransactionsModal from './Components/CreditCardTransactionsModa
 import CreditCardInvoicePaymentModal from './Components/CreditCardInvoicePaymentModal';
 import TransactionModal from './Components/TransactionModal';
 import useCreditCards from './Hooks/useCreditCards';
-import { canPayCreditCardInvoice } from './Hooks/invoiceActions';
+import { shouldShowCreditCardInvoicePaymentAction } from './Hooks/invoiceActions';
 
 const money = (value) => (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -17,11 +17,12 @@ function CreditCardSummary({ card, onPay }) {
     const available = Math.max(0, Number(card.limit || 0) - Number(card.current_invoice_amount || 0));
     const barColor = percentage >= 90 ? 'bg-red-500' : percentage >= 70 ? 'bg-orbital-accent' : 'bg-orbital-primary';
 
-    const payable = canPayCreditCardInvoice({
+    const invoice = {
         id: card.current_invoice_id,
         status: card.current_invoice_status,
         amount: card.current_invoice_amount,
-    });
+    };
+    const payable = shouldShowCreditCardInvoicePaymentAction(invoice);
 
     return <div className="mt-4 rounded-xl bg-orbital-background p-3"><div className="mb-3 flex items-center justify-between gap-3 text-xs text-orbital-text-secondary"><span>Fatura anterior</span><strong className="font-semibold text-orbital-text-primary">{money(card.previous_invoice_amount)}</strong></div><div className="flex items-center justify-between gap-3 text-sm"><span className="text-orbital-text-secondary">Fatura atual</span><strong className="text-orbital-primary-dark">{money(card.current_invoice_amount)}</strong></div>{payable && <Button color="blue" size="xs" className="mt-3 w-full" onClick={() => onPay(card)}>Pagar fatura</Button>}<div className="mt-3 flex items-center justify-between gap-3 text-xs text-orbital-text-secondary"><span>Limite comprometido</span><span className="font-semibold text-orbital-text-primary">{percentage.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</span></div><div className="mt-2 h-2.5 overflow-hidden rounded-full bg-orbital-border" role="progressbar" aria-label={'Limite comprometido do cartão ' + card.name} aria-valuenow={percentage} aria-valuemin="0" aria-valuemax="100"><div className={'h-full rounded-full transition-all ' + barColor} style={{ width: barWidth + '%' }} /></div><p className="mt-2 text-xs text-orbital-text-secondary">{money(available)} disponíveis</p></div>;
 }

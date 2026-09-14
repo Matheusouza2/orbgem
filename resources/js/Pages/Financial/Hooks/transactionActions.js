@@ -1,6 +1,8 @@
 export const canEditCreditCardTransaction = (transaction) => (
-    Boolean(transaction?.purchase_id)
-    && Boolean(transaction?.purchase)
-    && Boolean(transaction?.installment)
-    && transaction.invoice?.status !== 'PAID'
+    (transaction?.can_edit === true || (
+        Boolean(transaction?.purchase_id)
+        && Boolean(transaction?.purchase)
+        && Boolean(transaction?.installment)
+    ))
+    && String(transaction.invoice?.status || '').toUpperCase() !== 'PAID'
 );

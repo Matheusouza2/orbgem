@@ -35,8 +35,8 @@ class CreditCardTransactionResource extends JsonResource
                 'category_id' => $this->installment->purchase->category_id,
                 'merchant_id' => $this->installment->purchase->merchant_id,
             ],
-            'can_edit' => $this->installment !== null,
-            'can_delete' => $this->installment !== null,
+            'can_edit' => $this->installment !== null && $this->creditCardInvoice?->status?->value !== 'PAID',
+            'can_delete' => $this->installment !== null && $this->creditCardInvoice?->status?->value !== 'PAID',
             'source' => $externalTransaction?->source ?? 'internal',
             'installment' => $this->installment === null ? null : [
                 'number' => $this->installment->number,
