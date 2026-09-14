@@ -20,9 +20,10 @@ class ExternalInvestmentService
             $externalId = (string) ($remote['id'] ?? $remote['investmentId'] ?? '');
             $existing = $this->repository->findBySourceAndExternalId('pluggy', $externalId);
             $quantity = (string) ($remote['quantity'] ?? $remote['balance']['quantity'] ?? 0);
-            $currentValue = $this->cents($remote['currentValue'] ?? $remote['balance'] ?? $remote['marketValue'] ?? 0);
-            $investedAmount = $this->cents($remote['investedAmount'] ?? $remote['costBasis'] ?? $currentValue);
-            $averagePrice = $this->cents($remote['averagePrice'] ?? $remote['price'] ?? 0);
+            $currentValue = $this->cents($remote['balance'] ?? $remote['currentValue'] ?? $remote['marketValue'] ?? 0);
+            $investedValue = $remote['amountOriginal'] ?? $remote['investedAmount'] ?? $remote['costBasis'] ?? null;
+            $investedAmount = $investedValue === null ? $currentValue : $this->cents($investedValue);
+            $averagePrice = $this->cents($remote['value'] ?? $remote['averagePrice'] ?? $remote['price'] ?? 0);
             $investment = $existing?->investment;
             $attributes = InvestmentDTO::fromArray([
                 'wallet_id' => $connection->wallet_id,
@@ -52,7 +53,9 @@ class ExternalInvestmentService
     {
         $type = strtoupper((string) ($remote['type'] ?? $remote['subtype'] ?? 'OTHER'));
 
-        return str_contains($type, 'FII') ? InvestmentType::FII : match ($type) {
+        $subtype = strtoupper((string) ($remote['subtype'] ?? ''));
+
+        return str_contains($type, 'FII') || $subtype === 'REAL_ESTATE_FUND' ? InvestmentType::FII : match ($type) {
             'EQUITY' => InvestmentType::STOCK,
             'MUTUAL_FUND' => InvestmentType::FUND,
             'ETF' => InvestmentType::FUND,

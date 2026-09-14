@@ -44,6 +44,10 @@ class ExternalTransactionService
                 ]);
             }
 
+            $competenceDate = $invoice?->reference_month !== null
+                ? $invoice->reference_month.'-01'
+                : $dto->date;
+            $dueDate = $invoice?->due_date?->toDateString() ?? $dto->date;
             $transactionData = [
                 'wallet_id' => $dto->walletId,
                 'account_id' => $dto->accountId,
@@ -54,8 +58,8 @@ class ExternalTransactionService
                 'amount' => $dto->amount,
                 'financial_instrument_type' => $dto->financialInstrumentType->value,
                 'transaction_date' => $dto->date,
-                'competence_date' => $dto->date,
-                'due_date' => $dto->date,
+                'competence_date' => $competenceDate,
+                'due_date' => $dueDate,
                 'recurrence_type' => TransactionRecurrence::NONE->value,
                 'status' => $dto->status->value,
                 'notes' => $this->notes($dto),
@@ -66,8 +70,12 @@ class ExternalTransactionService
             $transaction = $existing?->transaction;
             if ($transaction === null) {
                 $transaction = $this->transactions->create(TransactionDTO::fromArray($transactionData, $member->id));
-            } elseif ($invoice !== null && $transaction->credit_card_invoice_id === null) {
-                $transaction->update(['credit_card_invoice_id' => $invoice->id]);
+            } elseif ($invoice !== null) {
+                $transaction->update([
+                    'credit_card_invoice_id' => $invoice->id,
+                    'competence_date' => $competenceDate,
+                    'due_date' => $dueDate,
+                ]);
             }
 
             return $this->repository->upsert('pluggy', $dto->externalId, [
@@ -99,8 +107,9 @@ class ExternalTransactionService
             return null;
         }
 
-        $reference = Carbon::parse($dto->date)->startOfMonth();
-        if (Carbon::parse($dto->date)->day > $card->closing_day) {
+        $forecastReference = $this->forecastReference($dto);
+        $reference = $forecastReference ?? Carbon::parse($dto->date)->startOfMonth();
+        if ($forecastReference === null && Carbon::parse($dto->date)->day > $card->closing_day) {
             $reference->addMonth();
         }
 
@@ -122,5 +131,15 @@ class ExternalTransactionService
             'due_date' => $due,
             'status' => 'OPEN',
         ]);
+    }
+
+    private function forecastReference(ImportTransactionDTO $dto): ?Carbon
+    {
+        $forecast = $dto->creditCardMetadata['bill_forecast_date'] ?? null;
+        if (! is_string($forecast) || ! preg_match('/^\d{4}-\d{2}(?:-\d{2})?/', $forecast)) {
+            return null;
+        }
+
+        return Carbon::parse($forecast)->startOfMonth();
     }
 }

@@ -163,6 +163,7 @@ class FinancialDashboardTest extends TestCase
     public function test_card_movements_expose_scoped_edit_and_delete_actions(): void
     {
         $modal = file_get_contents(resource_path('js/Pages/Financial/Components/CreditCardTransactionsModal.jsx'));
+        $page = file_get_contents(resource_path('js/Pages/Financial/CreditCards.jsx'));
         $hook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useCreditCards.js'));
         $service = file_get_contents(resource_path('js/Services/FinancialService.js'));
 
@@ -172,10 +173,25 @@ class FinancialDashboardTest extends TestCase
         foreach (['requestEditInstallment', 'requestEditPurchase', 'requestDeleteInstallment', 'requestDeletePurchase', 'loadCardTransactions(transactionsCard, transactionsFilters)'] as $contract) {
             $this->assertStringContainsString($contract, $hook);
         }
+        foreach (['onEditInstallment={cards.requestEditInstallment}', 'onEditPurchase={cards.requestEditPurchase}', 'onDeleteInstallment={cards.requestDeleteInstallment}', 'onDeletePurchase={cards.requestDeletePurchase}'] as $prop) {
+            $this->assertStringContainsString($prop, $page);
+        }
         $this->assertStringContainsString('updateCreditCardInstallment', $service);
         $this->assertStringContainsString('updateCreditCardPurchase', $service);
         $this->assertStringContainsString('deleteCreditCardInstallment', $service);
         $this->assertStringContainsString('deleteCreditCardPurchase', $service);
+    }
+
+    public function test_account_movements_expose_transaction_edit_action(): void
+    {
+        $modal = file_get_contents(resource_path('js/Pages/Financial/Components/AccountTransactionsModal.jsx'));
+        $page = file_get_contents(resource_path('js/Pages/Financial/Accounts.jsx'));
+        $hook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useWallets.js'));
+
+        $this->assertStringContainsString('Editar', $modal);
+        $this->assertStringContainsString('onEditTransaction={accounts.requestEditTransaction}', $page);
+        $this->assertStringContainsString('requestEditTransaction', $hook);
+        $this->assertStringContainsString('updateTransaction', $hook);
     }
 
     public function test_credit_card_page_exposes_previous_invoice_summary(): void

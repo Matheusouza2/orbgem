@@ -4,6 +4,7 @@ import Account from '@/Models/Account';
 import Transaction from '@/Models/Transaction';
 import Wallet from '@/Models/Wallet';
 import FinancialService from '@/Services/FinancialService';
+import { canManageTransaction } from './dashboardState';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível criar a carteira.' };
 
@@ -26,6 +27,7 @@ export default function useWallets() {
     const [transactionErrors, setTransactionErrors] = useState({});
     const [transactionSubmitting, setTransactionSubmitting] = useState(false);
     const [selectedAccountForTransaction, setSelectedAccountForTransaction] = useState(null);
+    const [editingTransaction, setEditingTransaction] = useState(null);
     const [accountTransactions, setAccountTransactions] = useState([]);
     const [accountTransactionsMeta, setAccountTransactionsMeta] = useState(null);
     const [accountTransactionsLoading, setAccountTransactionsLoading] = useState(false);
@@ -154,6 +156,7 @@ export default function useWallets() {
 
     const openTransactionModal = (account) => {
         setTransactionErrors({});
+        setEditingTransaction(null);
         setSelectedAccountForTransaction(account);
         transactionForm.reset();
         transactionForm.setData({
@@ -168,7 +171,29 @@ export default function useWallets() {
     };
 
     const closeTransactionModal = () => {
-        if (!transactionSubmitting) setTransactionModalOpen(false);
+        if (!transactionSubmitting) {
+            setTransactionModalOpen(false);
+            setEditingTransaction(null);
+        }
+    };
+
+    const requestEditTransaction = (transaction) => {
+        setTransactionErrors({});
+        setEditingTransaction(transaction);
+        setSelectedAccountForTransaction(selectedAccountForTransactions);
+        transactionForm.reset();
+        transactionForm.setData({
+            ...Transaction,
+            ...transaction,
+            amount: (Number(transaction.amount || 0) / 100).toFixed(2),
+            account_id: transaction.account_id ?? selectedAccountForTransactions?.id,
+            credit_card_id: null,
+            financial_instrument_type: 'ACCOUNT',
+            due_date: transaction.due_date ?? '',
+            paid_at: transaction.paid_at ?? null,
+            recurrence_type: 'NONE',
+        });
+        setTransactionModalOpen(true);
     };
 
     const submitTransaction = async (event) => {
@@ -177,7 +202,7 @@ export default function useWallets() {
         setTransactionSubmitting(true);
 
         try {
-            await FinancialService.createTransaction({
+            const payload = {
                 ...transactionForm.data,
                 wallet_id: Number(selectedAccountForTransaction.wallet_id),
                 account_id: Number(selectedAccountForTransaction.id),
@@ -185,10 +210,14 @@ export default function useWallets() {
                 amount: Math.round(Number(transactionForm.data.amount || 0) * 100),
                 effect: transactionForm.data.type === 'INCOME' ? 'CREDIT' : 'DEBIT',
                 financial_instrument_type: 'ACCOUNT',
-            });
+            };
+            if (editingTransaction) await FinancialService.updateTransaction(editingTransaction.id, payload);
+            else await FinancialService.createTransaction(payload);
             transactionForm.reset();
             setSelectedAccountForTransaction(null);
+            setEditingTransaction(null);
             setTransactionModalOpen(false);
+            if (selectedAccountForTransactions) await loadAccountTransactions(selectedAccountForTransactions, accountTransactionsFilters);
         } catch (error) {
             setTransactionErrors(error?.errors ?? { general: error?.message ?? 'Não foi possível registrar o lançamento.' });
         } finally {
@@ -210,7 +239,7 @@ export default function useWallets() {
                 page: filters.page,
                 per_page: 20,
             });
-            setAccountTransactions(response.data ?? []);
+            setAccountTransactions((response.data ?? []).map((transaction) => ({ ...transaction, canManage: canManageTransaction(transaction) })));
             setAccountTransactionsMeta(response.meta ?? null);
         } catch (error) {
             setAccountTransactionsError(error.message);
@@ -242,5 +271,5 @@ export default function useWallets() {
         loadAccountTransactions(selectedAccountForTransactions, filters);
     };
 
-    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedAccountForTransaction, accountTransactions, accountTransactionsMeta, accountTransactionsLoading, accountTransactionsError, accountTransactionsFilters, selectedAccountForTransactions, openAccountTransactions, closeAccountTransactions, updateAccountTransactionsFilters, changeAccountTransactionsPage };
+    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedAccountForTransaction, editingTransaction, requestEditTransaction, accountTransactions, accountTransactionsMeta, accountTransactionsLoading, accountTransactionsError, accountTransactionsFilters, selectedAccountForTransactions, openAccountTransactions, closeAccountTransactions, updateAccountTransactionsFilters, changeAccountTransactionsPage };
 }

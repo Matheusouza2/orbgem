@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\WalletMemberRole;
 use App\Jobs\SyncPluggyConnectionJob;
+use App\Jobs\SyncPluggyInvestmentsJob;
 use App\Jobs\SyncPluggyInvestmentTransactionsJob;
 use App\Jobs\SyncPluggyTransactionsJob;
 use App\Models\Account;
@@ -14,6 +15,7 @@ use App\Models\ExternalInvestmentTransaction;
 use App\Models\ExternalTransaction;
 use App\Models\FinancialConnection;
 use App\Models\Investment;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletMember;
@@ -91,6 +93,40 @@ class PluggySynchronizationTest extends TestCase
         self::assertSame(0, $wallet->transactions()->where('description', 'Salário')->count());
     }
 
+    public function test_it_uses_pluggy_bill_forecast_month_for_future_card_installments(): void
+    {
+        config(['services.pluggy.api_key' => 'test-api-key', 'services.pluggy.client_id' => null, 'services.pluggy.client_secret' => null]);
+        $wallet = Wallet::query()->create(['name' => 'Carteira']);
+        $user = User::factory()->create();
+        $member = WalletMember::query()->create(['wallet_id' => $wallet->id, 'user_id' => $user->id, 'role' => WalletMemberRole::OWNER, 'joined_at' => now()]);
+        $card = CreditCard::query()->create(['wallet_id' => $wallet->id, 'owner_wallet_member_id' => $member->id, 'name' => 'Cartão', 'credit_limit' => 100000, 'closing_day' => 5, 'due_day' => 12, 'active' => true]);
+        $connection = FinancialConnection::query()->create(['wallet_id' => $wallet->id, 'provider' => 'pluggy', 'external_id' => 'item-1', 'institution_name' => 'Banco Teste', 'status' => 'UPDATED']);
+        $externalAccount = ExternalAccount::query()->create(['financial_connection_id' => $connection->id, 'external_id' => 'card-1', 'type' => 'CREDIT', 'subtype' => 'CREDIT_CARD', 'accountable_type' => CreditCard::class, 'accountable_id' => $card->id]);
+        Http::fake([
+            'https://api.pluggy.ai/v2/transactions*' => Http::response(['results' => [[
+                'id' => 'installment-3',
+                'description' => 'Compra parcelada',
+                'amount' => 100,
+                'type' => 'DEBIT',
+                'date' => '2026-09-03',
+                'status' => 'PENDING',
+                'creditCardMetadata' => [
+                    'installmentNumber' => 3,
+                    'totalInstallments' => 4,
+                    'totalAmount' => 400,
+                    'billForecastDate' => '2026-10',
+                ],
+            ]], 'next' => null], 200),
+        ]);
+
+        SyncPluggyTransactionsJob::dispatchSync($externalAccount->id);
+
+        $transaction = Transaction::query()->where('description', 'Compra parcelada')->firstOrFail();
+        self::assertSame('2026-10-01', $transaction->competence_date->toDateString());
+        self::assertSame('2026-10-12', $transaction->due_date->toDateString());
+        self::assertSame('2026-10', $transaction->creditCardInvoice->reference_month);
+    }
+
     public function test_it_imports_pluggy_investment_income_with_paginated_results_idempotently(): void
     {
         config(['services.pluggy.api_key' => 'test-api-key', 'services.pluggy.client_id' => null, 'services.pluggy.client_secret' => null]);
@@ -114,5 +150,39 @@ class PluggySynchronizationTest extends TestCase
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/investment-income?wallet_id='.$wallet->id);
         $response->assertOk()->assertJsonCount(2, 'data');
+    }
+
+    public function test_it_stores_pluggy_investment_values_as_integer_cents(): void
+    {
+        config(['services.pluggy.api_key' => 'test-api-key', 'services.pluggy.client_id' => null, 'services.pluggy.client_secret' => null]);
+        $wallet = Wallet::query()->create(['name' => 'Carteira']);
+        $connection = FinancialConnection::query()->create([
+            'wallet_id' => $wallet->id,
+            'provider' => 'pluggy',
+            'external_id' => 'item-1',
+            'institution_name' => 'Banco Teste',
+            'status' => 'UPDATED',
+        ]);
+
+        Http::fake([
+            'https://api.pluggy.ai/investments*' => Http::response(['results' => [[
+                'id' => 'investment-1',
+                'name' => 'MXRF11',
+                'code' => 'MXRF11',
+                'type' => 'EQUITY',
+                'balance' => 916,
+                'amountOriginal' => 916,
+                'value' => 91.60,
+                'quantity' => 10,
+            ]]], 200),
+            'https://api.pluggy.ai/investments/investment-1/transactions*' => Http::response(['results' => []], 200),
+        ]);
+
+        SyncPluggyInvestmentsJob::dispatchSync($connection->id);
+
+        $investment = Investment::query()->where('ticker', 'MXRF11')->firstOrFail();
+        self::assertSame(91600, $investment->invested_amount);
+        self::assertSame(91600, $investment->current_value);
+        self::assertSame(9160, $investment->average_price);
     }
 }

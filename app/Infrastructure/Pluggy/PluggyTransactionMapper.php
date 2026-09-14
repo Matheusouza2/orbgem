@@ -15,6 +15,7 @@ class PluggyTransactionMapper
     {
         $isCreditCard = $accountableType === 'credit_card';
         $isIncome = strtoupper((string) ($transaction['type'] ?? 'DEBIT')) === 'CREDIT';
+        $metadata = is_array($transaction['creditCardMetadata'] ?? null) ? $transaction['creditCardMetadata'] : [];
 
         return new ImportTransactionDTO(
             externalId: (string) ($transaction['id'] ?? $transaction['transactionId'] ?? ''),
@@ -29,9 +30,12 @@ class PluggyTransactionMapper
             financialInstrumentType: $isCreditCard ? FinancialInstrumentType::CREDIT_CARD : FinancialInstrumentType::ACCOUNT,
             category: is_string($transaction['category'] ?? null) ? $transaction['category'] : null,
             creditCardMetadata: array_filter([
-                'installment_number' => $transaction['installmentNumber'] ?? null,
-                'total_installments' => $transaction['totalInstallments'] ?? null,
-                'total_amount' => isset($transaction['totalAmount']) ? (int) round((float) $transaction['totalAmount'] * 100) : null,
+                'installment_number' => $metadata['installmentNumber'] ?? $transaction['installmentNumber'] ?? null,
+                'total_installments' => $metadata['totalInstallments'] ?? $transaction['totalInstallments'] ?? null,
+                'total_amount' => isset($metadata['totalAmount'])
+                    ? (int) round((float) $metadata['totalAmount'] * 100)
+                    : (isset($transaction['totalAmount']) ? (int) round((float) $transaction['totalAmount'] * 100) : null),
+                'bill_forecast_date' => $metadata['billForecastDate'] ?? $transaction['billForecastDate'] ?? null,
             ], static fn (mixed $value): bool => $value !== null),
             rawData: $transaction,
         );
