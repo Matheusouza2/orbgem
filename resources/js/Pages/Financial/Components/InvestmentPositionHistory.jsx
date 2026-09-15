@@ -1,0 +1,8 @@
+import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from 'flowbite-react';
+import { ChartNoAxesCombined } from 'lucide-react';
+
+const money = (value) => (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export default function InvestmentPositionHistory({ open, onClose, history }) {
+    return <Modal show={open} onClose={onClose} size="md" className="wallet-modal"><ModalHeader className="wallet-modal__header"><span className="wallet-modal__mark"><ChartNoAxesCombined className="h-5 w-5" aria-hidden="true" /></span><span className="wallet-modal__heading"><span className="wallet-modal__eyebrow">Patrimônio em movimento</span><span className="wallet-modal__title">Evolução patrimonial</span></span></ModalHeader><ModalBody className="wallet-modal__body"><div className="wallet-modal__intro"><div><p className="wallet-modal__kicker">Histórico consolidado</p><p className="wallet-modal__description">Soma o último valor lançado de cada investimento até cada data.</p></div></div>{history.length === 0 ? <p className="text-sm text-orbital-text-secondary">Lance uma posição para iniciar o histórico.</p> : <div className="space-y-2">{history.map((item) => <div key={item.position_date} className="flex items-center justify-between rounded-lg border border-orbital-border px-3 py-3"><span className="text-sm text-orbital-text-secondary">{new Date(item.position_date + 'T12:00:00').toLocaleDateString('pt-BR')}</span><strong className="text-orbital-primary-dark">{money(item.total_value)}</strong></div>)}</div>}</ModalBody><ModalFooter className="wallet-modal__footer"><Button color="light" onClick={onClose}>Fechar</Button></ModalFooter></Modal>;
+}
