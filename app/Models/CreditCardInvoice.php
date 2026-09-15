@@ -35,4 +35,18 @@ class CreditCardInvoice extends Model
     {
         return $this->hasMany(InvoicePayment::class);
     }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function totalAmount(): int
+    {
+        return (int) $this->installments()->sum('amount')
+            + (int) $this->transactions()
+                ->whereNull('installment_id')
+                ->whereDoesntHave('invoicePayments')
+                ->sum('amount');
+    }
 }

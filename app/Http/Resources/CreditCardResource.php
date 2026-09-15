@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Transaction;
 use App\Enums\CreditCardInvoiceStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -41,9 +40,6 @@ class CreditCardResource extends JsonResource
             return 0;
         }
 
-        return (int) ($invoice->installments?->sum('amount') ?? 0) + (int) Transaction::query()
-            ->where('credit_card_invoice_id', $invoice->id)
-            ->whereNull('installment_id')
-            ->sum('amount');
+        return $invoice->totalAmount();
     }
 }

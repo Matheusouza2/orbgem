@@ -296,6 +296,46 @@ class CreditCardTest extends TestCase
         $this->assertDatabaseCount('invoice_payments', 0);
     }
 
+    public function test_invoice_payment_total_includes_standalone_card_transaction(): void
+    {
+        [$user, $wallet, $member] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $card = $this->creditCard($wallet);
+        $account = Account::create(['wallet_id' => $wallet->id, 'name' => 'Conta', 'type' => AccountType::CHECKING, 'initial_balance' => 5000, 'active' => true]);
+        $this->createPurchase($user, $wallet, $card);
+        $invoice = CreditCardInvoice::query()->where('reference_month', '2026-09')->firstOrFail();
+
+        Transaction::create([
+            'wallet_id' => $wallet->id,
+            'account_id' => null,
+            'description' => 'Compra importada',
+            'type' => TransactionType::EXPENSE,
+            'effect' => TransactionEffect::NONE,
+            'amount' => 250,
+            'financial_instrument_type' => FinancialInstrumentType::CREDIT_CARD,
+            'transaction_date' => '2026-09-11',
+            'competence_date' => '2026-09-01',
+            'due_date' => '2026-09-05',
+            'status' => TransactionStatus::PROJECTED,
+            'credit_card_invoice_id' => $invoice->id,
+            'created_by_member_id' => $member->id,
+            'updated_by_member_id' => $member->id,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards?wallet_id='.$wallet->id)
+            ->assertOk()
+            ->assertJsonPath('data.0.current_invoice_amount', 1250);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/credit-card-invoices/'.$invoice->id.'/payments', [
+                'account_id' => $account->id,
+                'amount' => 1250,
+                'payment_date' => '2026-09-20',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', CreditCardInvoiceStatus::PAID->value);
+    }
+
     public function test_full_invoice_payment_uses_the_payment_date_and_effectivates_invoice_transactions(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);

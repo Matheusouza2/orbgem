@@ -36,7 +36,7 @@ class PayCreditCardInvoiceUseCase
             $account = $this->accounts->lockForTransfer([$dto->accountId])->get($dto->accountId);
             if (! $account || $account->wallet_id !== $invoice->wallet_id) {
                 throw ValidationException::withMessages(['account_id' => 'The account must belong to the invoice wallet.']);
-            }$total = $invoice->installments()->sum('amount');
+            }$total = $invoice->totalAmount();
             $paid = $this->payments->totalForInvoice($invoice->id);
             if ($dto->amount <= 0 || $paid + $dto->amount > $total) {
                 throw ValidationException::withMessages(['amount' => 'The payment exceeds the invoice total.']);

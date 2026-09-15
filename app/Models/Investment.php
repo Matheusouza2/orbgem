@@ -21,6 +21,11 @@ class Investment extends Model
         return $this->hasMany(InvestmentYield::class);
     }
 
+    public function positions(): HasMany
+    {
+        return $this->hasMany(InvestmentPosition::class);
+    }
+
     protected function casts(): array
     {
         return [

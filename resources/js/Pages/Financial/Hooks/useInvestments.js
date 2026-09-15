@@ -4,6 +4,7 @@ import Investment from '@/Models/Investment';
 import FinancialService from '@/Services/FinancialService';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível concluir a operação.' };
+const today = () => new Date().toISOString().slice(0, 10);
 
 export default function useInvestments() {
     const [wallets, setWallets] = useState([]);
@@ -26,7 +27,19 @@ export default function useInvestments() {
     const [positionsOpen, setPositionsOpen] = useState(false);
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [incomeOpen, setIncomeOpen] = useState(false);
+    const [manualIncomeOpen, setManualIncomeOpen] = useState(false);
+    const [manualIncomeErrors, setManualIncomeErrors] = useState({});
+    const [manualIncomeSubmitting, setManualIncomeSubmitting] = useState(false);
+    const [positionInvestment, setPositionInvestment] = useState(null);
+    const [positionHistory, setPositionHistory] = useState([]);
+    const [positions, setPositions] = useState([]);
+    const [positionModalOpen, setPositionModalOpen] = useState(false);
+    const [positionHistoryOpen, setPositionHistoryOpen] = useState(false);
+    const [positionErrors, setPositionErrors] = useState({});
+    const [positionSubmitting, setPositionSubmitting] = useState(false);
     const form = useForm({ ...Investment });
+    const positionForm = useForm({ investment_id: '', value: '', position_date: today(), quantity: '', unit_price: '' });
+    const manualIncomeForm = useForm({ investment_id: '', amount: '', transaction_date: today() });
 
     const loadInvestments = async (walletId) => {
         if (!walletId) {
@@ -54,7 +67,7 @@ export default function useInvestments() {
             setWallets(availableWallets);
             const firstWalletId = availableWallets[0]?.id ?? '';
             setSelectedWalletId(firstWalletId);
-            return Promise.all([loadInvestments(firstWalletId), loadIncome(firstWalletId)]);
+            return Promise.all([loadInvestments(firstWalletId), loadIncome(firstWalletId), loadPositionHistory(firstWalletId)]);
         }).catch((error) => setErrors(normalizeErrors(error))).finally(() => setLoading(false));
     }, []);
 
@@ -63,10 +76,50 @@ export default function useInvestments() {
         setErrors({});
         loadInvestments(walletId).catch((error) => setErrors(normalizeErrors(error)));
         loadIncome(walletId).catch((error) => setErrors(normalizeErrors(error)));
+        loadPositionHistory(walletId).catch((error) => setErrors(normalizeErrors(error)));
+    };
+
+    const loadPositionHistory = async (walletId) => {
+        if (!walletId) {
+            setPositionHistory([]);
+            return;
+        }
+        setPositionHistory(await FinancialService.listInvestmentPositionHistory(walletId));
+    };
+
+    const loadPositions = async (investmentId) => {
+        if (!investmentId) {
+            setPositions([]);
+            return;
+        }
+        setPositions(await FinancialService.listInvestmentPositions(investmentId));
     };
 
     const updateIncomeFilters = (field, value) => setIncomeFilters((current) => ({ ...current, [field]: value }));
     const applyIncomeFilters = () => loadIncome(selectedWalletId);
+
+    const openIncomeModal = () => {
+        setManualIncomeErrors({});
+        manualIncomeForm.reset();
+        manualIncomeForm.setData({ investment_id: investments[0]?.id ?? '', amount: '', transaction_date: today() });
+        setManualIncomeOpen(true);
+    };
+
+    const submitIncome = async (event) => {
+        event.preventDefault();
+        setManualIncomeErrors({});
+        setManualIncomeSubmitting(true);
+        try {
+            await FinancialService.createInvestmentIncome({ investment_id: Number(manualIncomeForm.data.investment_id), amount: Math.round(Number(manualIncomeForm.data.amount || 0) * 100), transaction_date: manualIncomeForm.data.transaction_date });
+            await loadIncome(selectedWalletId);
+            setManualIncomeOpen(false);
+            manualIncomeForm.reset();
+        } catch (error) {
+            setManualIncomeErrors(normalizeErrors(error));
+        } finally {
+            setManualIncomeSubmitting(false);
+        }
+    };
 
     const filteredInvestments = investments.filter((investment) => (
         (!investmentFilters.type || investment.type === investmentFilters.type)
@@ -86,6 +139,61 @@ export default function useInvestments() {
         }
     };
     const closeYields = () => setYieldInvestment(null);
+
+    const openPositionModal = async (investment = null, position = null) => {
+        const selected = investment ?? investments[0] ?? null;
+        setPositionInvestment(selected);
+        setPositionErrors({});
+        positionForm.reset();
+        positionForm.setData({
+            investment_id: selected?.id ?? '',
+            value: position ? (Number(position.value || 0) / 100).toFixed(2) : '',
+            position_date: position?.position_date ?? today(),
+            quantity: position?.quantity ?? '',
+            unit_price: position ? (Number(position.unit_price || 0) / 100).toFixed(2) : '',
+        });
+        setPositionModalOpen(true);
+        await loadPositions(selected?.id);
+    };
+
+    const changePositionInvestment = async (investmentId) => {
+        const selected = investments.find((item) => String(item.id) === String(investmentId)) ?? null;
+        setPositionInvestment(selected);
+        positionForm.setData('investment_id', investmentId);
+        await loadPositions(investmentId);
+    };
+
+    const submitPosition = async (event) => {
+        event.preventDefault();
+        setPositionErrors({});
+        setPositionSubmitting(true);
+        try {
+            const payload = {
+                value: Math.round(Number(positionForm.data.value || 0) * 100),
+                position_date: positionForm.data.position_date,
+                quantity: positionForm.data.quantity || null,
+                unit_price: positionForm.data.unit_price ? Math.round(Number(positionForm.data.unit_price) * 100) : null,
+            };
+            await FinancialService.upsertInvestmentPosition(positionInvestment.id, payload);
+            await Promise.all([loadPositions(positionInvestment.id), loadPositionHistory(selectedWalletId)]);
+            positionForm.reset();
+            positionForm.setData({ investment_id: positionInvestment.id, value: '', position_date: today(), quantity: '', unit_price: '' });
+        } catch (error) {
+            setPositionErrors(normalizeErrors(error));
+        } finally {
+            setPositionSubmitting(false);
+        }
+    };
+
+    const removePosition = async (position) => {
+        if (!window.confirm('Excluir esta posição?')) return;
+        try {
+            await FinancialService.deleteInvestmentPosition(position.id);
+            await Promise.all([loadPositions(positionInvestment.id), loadPositionHistory(selectedWalletId)]);
+        } catch (error) {
+            setPositionErrors(normalizeErrors(error));
+        }
+    };
 
     const openModal = (investment = null) => {
         setErrors({});
@@ -144,5 +252,5 @@ export default function useInvestments() {
         try { await FinancialService.deleteInvestment(investment.id); setInvestments((current) => current.filter((item) => item.id !== investment.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 
-    return { wallets, investments: filteredInvestments, allInvestments: investments, investmentFilters, updateInvestmentFilter, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters, yieldInvestment, yields, yieldsLoading, openYields, closeYields, positionsOpen, setPositionsOpen, filtersOpen, setFiltersOpen, incomeOpen, setIncomeOpen };
+    return { wallets, investments: filteredInvestments, allInvestments: investments, investmentFilters, updateInvestmentFilter, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters, yieldInvestment, yields, yieldsLoading, openYields, closeYields, positionsOpen, setPositionsOpen, filtersOpen, setFiltersOpen, incomeOpen, setIncomeOpen, manualIncomeOpen, setManualIncomeOpen, manualIncomeForm, manualIncomeErrors, manualIncomeSubmitting, openIncomeModal, submitIncome, positionInvestment, positions, positionHistory, positionModalOpen, positionHistoryOpen, positionForm, positionErrors, positionSubmitting, openPositionModal, changePositionInvestment, submitPosition, removePosition, setPositionModalOpen, setPositionHistoryOpen };
 }
