@@ -35,7 +35,9 @@ class TransactionController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return TransactionResource::collection($useCase->execute(TransactionListFilterDTO::fromArray($request->validated()), $user));
+        $result = $useCase->execute(TransactionListFilterDTO::fromArray($request->validated()), $user);
+
+        return TransactionResource::collection($result['transactions'])->additional(['total_amount' => $result['total_amount']]);
     }
 
     public function show(int $transaction, ShowTransactionUseCase $useCase): TransactionDetailResource

@@ -61,6 +61,11 @@ class TransactionService
         return $this->transactionRepository->forWallet($filters);
     }
 
+    public function totalAmountForWallet(TransactionListFilterDTO $filters): int
+    {
+        return $this->transactionRepository->totalAmountForWallet($filters);
+    }
+
     public function monthlyTotals(MonthlySummaryDTO $summary): array
     {
         return $this->transactionRepository->totalsForMonth($summary);

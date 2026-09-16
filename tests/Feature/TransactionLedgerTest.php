@@ -363,6 +363,55 @@ class TransactionLedgerTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    public function test_transaction_list_can_order_account_movements_by_due_date_descending(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::VIEWER);
+        $account = $this->account($wallet);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->value('id');
+        foreach ([['amount' => 100, 'transaction_date' => '2026-09-20', 'due_date' => '2026-09-10'], ['amount' => 200, 'transaction_date' => '2026-09-10', 'due_date' => '2026-09-25']] as $attributes) {
+            Transaction::create([
+                ...$this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, $attributes['amount']),
+                'transaction_date' => $attributes['transaction_date'],
+                'due_date' => $attributes['due_date'],
+                'created_by_member_id' => $memberId,
+                'updated_by_member_id' => $memberId,
+            ]);
+        }
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/transactions?wallet_id={$wallet->id}&account_id={$account->id}&sort_by=due_date&sort_direction=desc")
+            ->assertOk()
+            ->assertJsonPath('data.0.amount', 200)
+            ->assertJsonPath('data.0.due_date', '2026-09-25')
+            ->assertJsonPath('data.1.amount', 100);
+    }
+
+    public function test_transaction_list_exposes_total_amount_for_the_applied_filters(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::VIEWER);
+        $account = $this->account($wallet);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->value('id');
+        $base = $this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, 100);
+        foreach ([
+            ['amount' => 100, 'status' => TransactionStatus::PROJECTED, 'is_third_party' => false, 'competence_date' => '2026-09-05'],
+            ['amount' => 200, 'status' => TransactionStatus::PROJECTED, 'is_third_party' => false, 'competence_date' => '2026-09-15'],
+            ['amount' => 400, 'status' => TransactionStatus::PROJECTED, 'is_third_party' => true, 'competence_date' => '2026-09-15'],
+            ['amount' => 800, 'status' => TransactionStatus::POSTED, 'is_third_party' => false, 'competence_date' => '2026-09-15'],
+        ] as $attributes) {
+            Transaction::create([
+                ...$base,
+                ...$attributes,
+                'created_by_member_id' => $memberId,
+                'updated_by_member_id' => $memberId,
+            ]);
+        }
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/transactions?wallet_id={$wallet->id}&account_id={$account->id}&month=2026-09&status=PROJECTED&include_third_party=0")
+            ->assertOk()
+            ->assertJsonPath('total_amount', 300);
+    }
+
     public function test_transaction_list_rejects_invalid_pagination_sort_and_date_ranges(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::VIEWER);

@@ -249,9 +249,12 @@ export default function useWallets() {
                 include_third_party: filters.include_third_party ? '1' : '0',
                 page: filters.page,
                 per_page: 20,
+                sort_by: 'due_date',
+                sort_direction: 'desc',
             });
             setAccountTransactions((response.data ?? []).map((transaction) => ({ ...transaction, canManage: canManageTransaction(transaction) })));
             setAccountTransactionsMeta(response.meta ?? null);
+            setAccountTransactionsMeta({ ...(response.meta ?? {}), total_amount: Number(response.total_amount ?? 0) });
         } catch (error) {
             setAccountTransactionsError(error.message);
         } finally {

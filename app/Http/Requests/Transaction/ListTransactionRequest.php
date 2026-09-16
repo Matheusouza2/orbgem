@@ -20,7 +20,7 @@ class ListTransactionRequest extends FormRequest
             'wallet_id' => ['required', 'integer', 'exists:wallets,id'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'sort_by' => ['nullable', Rule::in(['id', 'amount', 'transaction_date', 'competence_date', 'created_at'])],
+            'sort_by' => ['nullable', Rule::in(['id', 'amount', 'transaction_date', 'competence_date', 'due_date', 'created_at'])],
             'sort_direction' => ['nullable', Rule::in(['asc', 'desc'])],
             'account_id' => ['nullable', 'integer'],
             'merchant_id' => ['nullable', 'integer'],

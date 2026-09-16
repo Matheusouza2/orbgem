@@ -70,7 +70,7 @@ class CreditCardRepository implements CreditCardRepositoryInterface
             })
             ->when(! $dto->includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->when($dto->status !== null, fn ($query) => $query->where('status', $dto->status))
-            ->orderByDesc('competence_date')
+            ->orderByDesc('due_date')
             ->orderByDesc('id');
 
         if ($dto->month !== null) {

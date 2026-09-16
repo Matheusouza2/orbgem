@@ -177,10 +177,10 @@ export default function useCreditCards() {
         setTransactionsLoading(true);
         setTransactionsError('');
         try {
-            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, include_third_party: filters.include_third_party ? '1' : '0', page: filters.page, per_page: 20 });
+            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, include_third_party: filters.include_third_party ? '1' : '0', sort_by: 'due_date', sort_direction: 'desc', page: filters.page, per_page: 20 });
             setCardTransactions(response.data ?? []);
             setTransactionsCard((current) => current ? { ...current, current_invoice_amount: response.invoice_amount ?? 0 } : current);
-            setTransactionsMeta(response.meta ?? null);
+            setTransactionsMeta(response.meta ? { ...response.meta, total_amount: Number(response.total_amount ?? 0) } : null);
         } catch (error) {
             setTransactionsError(error.message);
         } finally {

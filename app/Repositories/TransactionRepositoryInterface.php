@@ -31,6 +31,8 @@ interface TransactionRepositoryInterface
 
     public function forWallet(TransactionListFilterDTO $filters): LengthAwarePaginator;
 
+    public function totalAmountForWallet(TransactionListFilterDTO $filters): int;
+
     public function totalsForMonth(MonthlySummaryDTO $summary): array;
 
     public function postedAmountsForAccount(int $accountId, bool $includeThirdParty = true): Collection;

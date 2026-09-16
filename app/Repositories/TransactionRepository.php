@@ -9,6 +9,7 @@ use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -68,13 +69,21 @@ class TransactionRepository implements TransactionRepositoryInterface
 
     public function forWallet(TransactionListFilterDTO $filters): LengthAwarePaginator
     {
+        return $this->queryForWallet($filters)->orderBy($filters->sortBy, $filters->sortDirection)->orderBy('id', $filters->sortDirection)->paginate($filters->perPage, ['*'], 'page', $filters->page);
+    }
+
+    public function totalAmountForWallet(TransactionListFilterDTO $filters): int
+    {
+        return (int) $this->queryForWallet($filters)->sum('amount');
+    }
+
+    private function queryForWallet(TransactionListFilterDTO $filters): Builder
+    {
         $query = Transaction::query()
             ->withExists('reversals')
             ->with('externalTransactions')
             ->where('wallet_id', $filters->walletId)
-            ->when(! $filters->includeThirdParty, fn ($query) => $query->where('is_third_party', false))
-            ->orderBy($filters->sortBy, $filters->sortDirection)
-            ->orderBy('id', $filters->sortDirection);
+            ->when(! $filters->includeThirdParty, fn ($query) => $query->where('is_third_party', false));
         if ($filters->accountId !== null) {
             $query->where('account_id', $filters->accountId);
         }
@@ -105,7 +114,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             $query->whereDate('competence_date', '<=', $filters->competenceDateTo);
         }
 
-        return $query->paginate($filters->perPage, ['*'], 'page', $filters->page);
+        return $query;
     }
 
     public function totalsForMonth(MonthlySummaryDTO $summary): array

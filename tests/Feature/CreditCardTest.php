@@ -217,8 +217,48 @@ class CreditCardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.total', 2)
             ->assertJsonPath('invoice_amount', 3500)
+            ->assertJsonPath('total_amount', 3500)
             ->assertJsonFragment(['description' => 'Compra importada'])
             ->assertJsonFragment(['description' => 'Compra (1/1)']);
+    }
+
+    public function test_card_transactions_are_ordered_by_due_date_descending(): void
+    {
+        [$user, $wallet, $member] = $this->walletWithMember(WalletMemberRole::EDITOR);
+        $card = $this->creditCard($wallet);
+        $invoice = CreditCardInvoice::query()->create([
+            'wallet_id' => $wallet->id,
+            'credit_card_id' => $card->id,
+            'reference_month' => '2026-09',
+            'closing_date' => '2026-09-15',
+            'due_date' => '2026-09-12',
+            'status' => CreditCardInvoiceStatus::OPEN,
+        ]);
+
+        foreach ([['Mais recente', '2026-09-20', 200], ['Mais antiga', '2026-09-05', 100]] as [$description, $dueDate, $amount]) {
+            Transaction::query()->create([
+                'wallet_id' => $wallet->id,
+                'description' => $description,
+                'type' => TransactionType::EXPENSE,
+                'effect' => TransactionEffect::DEBIT,
+                'amount' => $amount,
+                'financial_instrument_type' => FinancialInstrumentType::CREDIT_CARD,
+                'transaction_date' => '2026-09-01',
+                'competence_date' => '2026-09-01',
+                'due_date' => $dueDate,
+                'status' => TransactionStatus::PROJECTED,
+                'credit_card_invoice_id' => $invoice->id,
+                'created_by_member_id' => $member->id,
+                'updated_by_member_id' => $member->id,
+            ]);
+        }
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards/'.$card->id.'/transactions?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.0.description', 'Mais recente')
+            ->assertJsonPath('data.1.description', 'Mais antiga')
+            ->assertJsonPath('total_amount', 300);
     }
 
     public function test_card_transactions_can_hide_third_party_expenses(): void

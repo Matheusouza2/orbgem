@@ -215,11 +215,15 @@ class FinancialDashboardTest extends TestCase
         foreach (['Editar parcela', 'Editar todas', 'Excluir parcela', 'Excluir todas'] as $label) {
             $this->assertStringContainsString($label, $modal);
         }
-        $this->assertStringContainsString('Total da competência', $modal);
-        $this->assertStringContainsString('current_invoice_amount', $modal);
+        $this->assertStringContainsString('Total filtrado', $modal);
+        $this->assertStringContainsString('meta?.total_amount', $modal);
+        $this->assertStringContainsString('formatDateBR(transaction.due_date)', $modal);
         foreach (['requestEditInstallment', 'requestEditPurchase', 'requestDeleteInstallment', 'requestDeletePurchase', 'loadCardTransactions(transactionsCard, transactionsFilters)'] as $contract) {
             $this->assertStringContainsString($contract, $hook);
         }
+        $this->assertStringContainsString("sort_by: 'due_date'", $hook);
+        $this->assertStringContainsString("sort_direction: 'desc'", $hook);
+        $this->assertStringContainsString('total_amount', $hook);
         foreach (['onEditInstallment={cards.requestEditInstallment}', 'onEditPurchase={cards.requestEditPurchase}', 'onDeleteInstallment={cards.requestDeleteInstallment}', 'onDeletePurchase={cards.requestDeletePurchase}'] as $prop) {
             $this->assertStringContainsString($prop, $page);
         }
@@ -236,9 +240,14 @@ class FinancialDashboardTest extends TestCase
         $hook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useWallets.js'));
 
         $this->assertStringContainsString('Editar', $modal);
+        $this->assertStringContainsString('formatDateBR(transaction.due_date)', $modal);
         $this->assertStringContainsString('onEditTransaction={accounts.requestEditTransaction}', $page);
         $this->assertStringContainsString('requestEditTransaction', $hook);
         $this->assertStringContainsString('updateTransaction', $hook);
+        $this->assertStringContainsString("sort_by: 'due_date'", $hook);
+        $this->assertStringContainsString("sort_direction: 'desc'", $hook);
+        $this->assertStringContainsString('total_amount', $hook);
+        $this->assertStringContainsString('totalAmount', $modal);
     }
 
     public function test_credit_card_page_exposes_previous_invoice_summary(): void

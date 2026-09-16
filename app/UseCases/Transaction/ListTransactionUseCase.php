@@ -15,7 +15,8 @@ class ListTransactionUseCase
 {
     public function __construct(private TransactionService $transactionService, private WalletService $walletService, private WalletMembershipAuthorization $membershipAuthorization) {}
 
-    public function execute(TransactionListFilterDTO $filters, User $user): LengthAwarePaginator
+    /** @return array{transactions: LengthAwarePaginator, total_amount: int} */
+    public function execute(TransactionListFilterDTO $filters, User $user): array
     {
         $wallet = $this->walletService->find($filters->walletId);
         if ($wallet === null) {
@@ -23,6 +24,9 @@ class ListTransactionUseCase
         }
         $this->membershipAuthorization->authorize($user, $wallet, WalletMemberRole::VIEWER, WalletMemberRole::EDITOR, WalletMemberRole::OWNER);
 
-        return $this->transactionService->listForWallet($filters);
+        return [
+            'transactions' => $this->transactionService->listForWallet($filters),
+            'total_amount' => $this->transactionService->totalAmountForWallet($filters),
+        ];
     }
 }

@@ -34,7 +34,10 @@ class CreditCardController extends Controller
     {
         $result = $useCase->execute(CreditCardTransactionListDTO::fromArray($request->validated(), $creditCard->id), $creditCard, $request->user());
 
-        return CreditCardTransactionResource::collection($result->transactions)->additional(['invoice_amount' => $result->amount]);
+        return CreditCardTransactionResource::collection($result->transactions)->additional([
+            'invoice_amount' => $result->amount,
+            'total_amount' => $result->amount,
+        ]);
     }
 
     public function update(CreateCreditCardRequest $request, CreditCard $creditCard, UpdateCreditCardUseCase $useCase): CreditCardResource
