@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\DTO\MonthlySummaryDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\TransactionListFilterDTO;
+use App\Enums\TransactionEffect;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
@@ -74,7 +75,7 @@ class TransactionRepository implements TransactionRepositoryInterface
 
     public function totalAmountForWallet(TransactionListFilterDTO $filters): int
     {
-        return (int) $this->queryForWallet($filters)->sum('amount');
+        return (int) $this->queryForWallet($filters)->get()->sum(fn (Transaction $transaction): int => $transaction->effect === TransactionEffect::CREDIT ? $transaction->amount : -$transaction->amount);
     }
 
     private function queryForWallet(TransactionListFilterDTO $filters): Builder
@@ -89,6 +90,9 @@ class TransactionRepository implements TransactionRepositoryInterface
         }
         if ($filters->merchantId !== null) {
             $query->where('merchant_id', $filters->merchantId);
+        }
+        if ($filters->categoryId !== null) {
+            $query->where('category_id', $filters->categoryId);
         }
         if ($filters->type !== null) {
             $query->where('type', $filters->type);

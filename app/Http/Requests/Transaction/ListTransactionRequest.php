@@ -24,6 +24,7 @@ class ListTransactionRequest extends FormRequest
             'sort_direction' => ['nullable', Rule::in(['asc', 'desc'])],
             'account_id' => ['nullable', 'integer'],
             'merchant_id' => ['nullable', 'integer'],
+            'category_id' => ['nullable', 'integer'],
             'type' => ['nullable', Rule::enum(TransactionType::class)],
             'status' => ['nullable', Rule::enum(TransactionStatus::class)],
             'month' => ['nullable', 'date_format:Y-m'],

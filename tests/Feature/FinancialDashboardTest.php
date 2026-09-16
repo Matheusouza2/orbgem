@@ -218,6 +218,8 @@ class FinancialDashboardTest extends TestCase
         $this->assertStringContainsString('Total filtrado', $modal);
         $this->assertStringContainsString('meta?.total_amount', $modal);
         $this->assertStringContainsString('formatDateBR(transaction.due_date)', $modal);
+        $this->assertStringContainsString("onFilter('type'", $modal);
+        $this->assertStringContainsString("onFilter('category_id'", $modal);
         foreach (['requestEditInstallment', 'requestEditPurchase', 'requestDeleteInstallment', 'requestDeletePurchase', 'loadCardTransactions(transactionsCard, transactionsFilters)'] as $contract) {
             $this->assertStringContainsString($contract, $hook);
         }
@@ -231,6 +233,8 @@ class FinancialDashboardTest extends TestCase
         $this->assertStringContainsString('updateCreditCardPurchase', $service);
         $this->assertStringContainsString('deleteCreditCardInstallment', $service);
         $this->assertStringContainsString('deleteCreditCardPurchase', $service);
+        $this->assertStringContainsString("onFilter('type'", $modal);
+        $this->assertStringContainsString("onFilter('category_id'", $modal);
     }
 
     public function test_account_movements_expose_transaction_edit_action(): void

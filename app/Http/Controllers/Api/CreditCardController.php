@@ -36,7 +36,7 @@ class CreditCardController extends Controller
 
         return CreditCardTransactionResource::collection($result->transactions)->additional([
             'invoice_amount' => $result->amount,
-            'total_amount' => $result->amount,
+            'total_amount' => $result->totalAmount,
         ]);
     }
 

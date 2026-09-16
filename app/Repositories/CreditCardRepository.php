@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\DTO\CreditCardDTO;
 use App\DTO\CreditCardTransactionListDTO;
+use App\Enums\TransactionEffect;
 use App\Models\CreditCard;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -59,6 +60,11 @@ class CreditCardRepository implements CreditCardRepositoryInterface
         return (int) $this->transactionQuery($dto)->sum('amount');
     }
 
+    public function transactionsNetAmount(CreditCardTransactionListDTO $dto): int
+    {
+        return (int) $this->transactionQuery($dto)->get()->sum(fn (Transaction $transaction): int => $transaction->effect === TransactionEffect::CREDIT ? $transaction->amount : -$transaction->amount);
+    }
+
     private function transactionQuery(CreditCardTransactionListDTO $dto): Builder
     {
         $query = Transaction::query()
@@ -70,6 +76,8 @@ class CreditCardRepository implements CreditCardRepositoryInterface
             })
             ->when(! $dto->includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->when($dto->status !== null, fn ($query) => $query->where('status', $dto->status))
+            ->when($dto->type !== null, fn ($query) => $query->where('type', $dto->type))
+            ->when($dto->categoryId !== null, fn ($query) => $query->where('category_id', $dto->categoryId))
             ->orderByDesc('due_date')
             ->orderByDesc('id');
 

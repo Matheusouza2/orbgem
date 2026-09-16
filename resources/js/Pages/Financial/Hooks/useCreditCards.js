@@ -22,7 +22,7 @@ export default function useCreditCards() {
     const [transactionsMeta, setTransactionsMeta] = useState(null);
     const [transactionsLoading, setTransactionsLoading] = useState(false);
     const [transactionsError, setTransactionsError] = useState('');
-    const [transactionsFilters, setTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', page: 1, include_third_party: true });
+    const [transactionsFilters, setTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true });
     const [transactionModalOpen, setTransactionModalOpen] = useState(false);
     const [transactionCategories, setTransactionCategories] = useState([]);
     const [transactionMerchants, setTransactionMerchants] = useState([]);
@@ -177,7 +177,7 @@ export default function useCreditCards() {
         setTransactionsLoading(true);
         setTransactionsError('');
         try {
-            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, include_third_party: filters.include_third_party ? '1' : '0', sort_by: 'due_date', sort_direction: 'desc', page: filters.page, per_page: 20 });
+            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, type: filters.type, category_id: filters.category_id, include_third_party: filters.include_third_party ? '1' : '0', sort_by: 'due_date', sort_direction: 'desc', page: filters.page, per_page: 20 });
             setCardTransactions(response.data ?? []);
             setTransactionsCard((current) => current ? { ...current, current_invoice_amount: response.invoice_amount ?? 0 } : current);
             setTransactionsMeta(response.meta ? { ...response.meta, total_amount: Number(response.total_amount ?? 0) } : null);
@@ -189,7 +189,7 @@ export default function useCreditCards() {
     };
 
     const openTransactions = (card) => {
-        const filters = { month: new Date().toISOString().slice(0, 7), status: '', page: 1, include_third_party: true };
+        const filters = { month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true };
         setTransactionsCard({ ...card, onEditInstallment: requestEditInstallment, onEditPurchase: requestEditPurchase, onDeleteInstallment: requestDeleteInstallment, onDeletePurchase: requestDeletePurchase });
         setTransactionsFilters(filters);
         loadCardTransactions(card, filters);

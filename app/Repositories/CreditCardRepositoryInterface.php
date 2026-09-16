@@ -25,4 +25,6 @@ interface CreditCardRepositoryInterface
     public function transactions(CreditCardTransactionListDTO $dto): LengthAwarePaginator;
 
     public function transactionsAmount(CreditCardTransactionListDTO $dto): int;
+
+    public function transactionsNetAmount(CreditCardTransactionListDTO $dto): int;
 }

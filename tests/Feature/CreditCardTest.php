@@ -217,7 +217,7 @@ class CreditCardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.total', 2)
             ->assertJsonPath('invoice_amount', 3500)
-            ->assertJsonPath('total_amount', 3500)
+            ->assertJsonPath('total_amount', -3500)
             ->assertJsonFragment(['description' => 'Compra importada'])
             ->assertJsonFragment(['description' => 'Compra (1/1)']);
     }
@@ -258,7 +258,7 @@ class CreditCardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.description', 'Mais recente')
             ->assertJsonPath('data.1.description', 'Mais antiga')
-            ->assertJsonPath('total_amount', 300);
+            ->assertJsonPath('total_amount', -300);
     }
 
     public function test_card_transactions_can_hide_third_party_expenses(): void

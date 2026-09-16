@@ -27,6 +27,7 @@ class ListCreditCardTransactionsUseCase
         return new CreditCardTransactionListResult(
             transactions: $this->cards->transactions($dto),
             amount: $this->cards->transactionsAmount($dto),
+            totalAmount: $this->cards->transactionsNetAmount($dto),
         );
     }
 }

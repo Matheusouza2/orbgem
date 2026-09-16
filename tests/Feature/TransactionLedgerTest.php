@@ -409,7 +409,7 @@ class TransactionLedgerTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->getJson("/api/v1/transactions?wallet_id={$wallet->id}&account_id={$account->id}&month=2026-09&status=PROJECTED&include_third_party=0")
             ->assertOk()
-            ->assertJsonPath('total_amount', 300);
+            ->assertJsonPath('total_amount', -300);
     }
 
     public function test_transaction_list_rejects_invalid_pagination_sort_and_date_ranges(): void

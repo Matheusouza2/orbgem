@@ -33,7 +33,7 @@ export default function useWallets() {
     const [accountTransactionsMeta, setAccountTransactionsMeta] = useState(null);
     const [accountTransactionsLoading, setAccountTransactionsLoading] = useState(false);
     const [accountTransactionsError, setAccountTransactionsError] = useState('');
-    const [accountTransactionsFilters, setAccountTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', page: 1, include_third_party: true });
+    const [accountTransactionsFilters, setAccountTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true });
     const [selectedAccountForTransactions, setSelectedAccountForTransactions] = useState(null);
     const form = useForm({ ...Wallet });
     const accountForm = useForm({ ...Account });
@@ -246,6 +246,8 @@ export default function useWallets() {
                 wallet_id: account.wallet_id,
                 month: filters.month,
                 status: filters.status,
+                type: filters.type,
+                category_id: filters.category_id,
                 include_third_party: filters.include_third_party ? '1' : '0',
                 page: filters.page,
                 per_page: 20,
@@ -253,7 +255,6 @@ export default function useWallets() {
                 sort_direction: 'desc',
             });
             setAccountTransactions((response.data ?? []).map((transaction) => ({ ...transaction, canManage: canManageTransaction(transaction) })));
-            setAccountTransactionsMeta(response.meta ?? null);
             setAccountTransactionsMeta({ ...(response.meta ?? {}), total_amount: Number(response.total_amount ?? 0) });
         } catch (error) {
             setAccountTransactionsError(error.message);
@@ -263,7 +264,7 @@ export default function useWallets() {
     };
 
     const openAccountTransactions = (account) => {
-        const filters = { month: new Date().toISOString().slice(0, 7), status: '', page: 1, include_third_party: true };
+        const filters = { month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true };
         setSelectedAccountForTransactions(account);
         setAccountTransactionsFilters(filters);
         loadAccountTransactions(account, filters);
