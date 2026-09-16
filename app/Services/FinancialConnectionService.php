@@ -29,6 +29,11 @@ class FinancialConnectionService
         return $this->repository->find($id);
     }
 
+    public function delete(FinancialConnection $connection): void
+    {
+        $this->repository->delete($connection);
+    }
+
     public function findByProviderExternalId(string $provider, string $externalId): ?FinancialConnection
     {
         return $this->repository->findByProviderExternalId($provider, $externalId);

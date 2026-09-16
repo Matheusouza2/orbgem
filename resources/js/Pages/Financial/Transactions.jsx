@@ -42,7 +42,7 @@ export default function Transactions() {
             {transactions.selectedWalletId && <>
                 <div className="transactions-stats"><div><span>Entradas realizadas</span><strong className="text-emerald-700">{money(transactions.summary.actual_income)}</strong><small>neste mês</small></div><div><span>Despesas realizadas</span><strong className="text-rose-700">{money(transactions.summary.actual_expenses)}</strong><small>neste mês</small></div><div><span>Despesas previstas</span><strong className="text-orbital-primary">{money(transactions.summary.forecast_expenses)}</strong><small>planejado</small></div></div>
                 <div className="grid grid-cols-1 items-start gap-5">
-                    <TransactionList transactions={transactions.transactions} categories={transactions.categories} loading={transactions.loading} onRequestReversal={transactions.requestReversal} onRequestEdit={transactions.requestEdit} onRequestDelete={transactions.requestDelete} />
+                    <TransactionList transactions={transactions.transactions} categories={transactions.categories} loading={transactions.loading} onRequestReversal={transactions.requestReversal} onRequestEdit={transactions.requestEdit} onRequestDelete={transactions.requestDelete} onEffectivate={transactions.effectivateTransaction} />
                 </div>
             </>}
         </div>

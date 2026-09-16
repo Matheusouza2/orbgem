@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canEditCreditCardTransaction } from '../../resources/js/Pages/Financial/Hooks/transactionActions.js';
+import { canEditCreditCardTransaction, canEffectivateTransaction } from '../../resources/js/Pages/Financial/Hooks/transactionActions.js';
 import { canManageTransaction } from '../../resources/js/Pages/Financial/Hooks/dashboardState.js';
 
 test('allows editing an open internal card movement from its installment and purchase data', () => {
@@ -65,6 +65,14 @@ test('allows managing an account transaction even when it has no effect', () => 
         effect: 'NONE',
         type: 'EXPENSE',
     }), true);
+});
+
+test('shows effectivation only for manageable projected transactions', () => {
+    assert.equal(canEffectivateTransaction({ status: 'PROJECTED', canManage: true }), true);
+    assert.equal(canEffectivateTransaction({ status: 'PROJECTED', canManage: false, recurring_transaction_id: 12 }), true);
+    assert.equal(canEffectivateTransaction({ status: 'POSTED', canManage: true }), false);
+    assert.equal(canEffectivateTransaction({ status: 'PROJECTED', canManage: false }), false);
+    assert.equal(canEffectivateTransaction({ status: 'PROJECTED', can_edit: false }), false);
 });
 
 test('allows editing a standalone card transaction from an unpaid invoice', () => {

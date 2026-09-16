@@ -6,3 +6,9 @@ export const canEditCreditCardTransaction = (transaction) => (
     ))
     && String(transaction.invoice?.status || '').toUpperCase() !== 'PAID'
 );
+
+export const canEffectivateTransaction = (transaction) => (
+    transaction.status === 'PROJECTED'
+    && (transaction.canManage !== false || transaction.recurring_transaction_id != null)
+    && transaction.can_edit !== false
+);

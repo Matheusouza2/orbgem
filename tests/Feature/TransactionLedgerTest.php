@@ -104,6 +104,30 @@ class TransactionLedgerTest extends TestCase
         $summary->assertOk()->assertJsonPath('data.balance', 13000)->assertJsonPath('data.actual_expenses', 2000)->assertJsonPath('data.forecast_expenses', 5000)->assertJsonPath('data.actual_income', 5000)->assertJsonPath('data.forecast_income', 5700);
     }
 
+    public function test_editor_can_effectivate_a_projected_transaction(): void
+    {
+        Carbon::setTestNow('2026-09-16 14:30:00');
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::EDITOR);
+        $account = $this->account($wallet);
+        $memberId = WalletMember::query()->where('wallet_id', $wallet->id)->where('user_id', $user->id)->value('id');
+        $transaction = Transaction::create([
+            ...$this->payload($wallet, $account, null, TransactionType::EXPENSE, TransactionEffect::DEBIT, 1500),
+            'status' => TransactionStatus::PROJECTED,
+            'paid_at' => null,
+            'created_by_member_id' => $memberId,
+            'updated_by_member_id' => $memberId,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/transactions/'.$transaction->id.'/effectivate')
+            ->assertOk()
+            ->assertJsonPath('data.status', TransactionStatus::POSTED->value)
+            ->assertJsonPath('data.paid_at', '2026-09-16T14:30:00.000000Z');
+
+        $this->assertDatabaseHas('transactions', ['id' => $transaction->id, 'status' => TransactionStatus::POSTED->value]);
+        Carbon::setTestNow();
+    }
+
     public function test_monthly_summary_exposes_category_and_due_status_aggregates(): void
     {
         Carbon::setTestNow('2026-09-13 12:00:00');

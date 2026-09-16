@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Enums\WalletMemberRole;
 use App\Jobs\SyncPluggyItem;
+use App\Models\FinancialConnection;
+use App\Models\PluggyItem;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletMember;
@@ -65,6 +67,34 @@ class OpenFinanceTest extends TestCase
 
         $this->postJson('/api/v1/open-finance/webhook', ['event' => 'item/updated', 'itemId' => '123e4567-e89b-12d3-a456-426614174000'])->assertOk();
         Queue::assertPushed(SyncPluggyItem::class);
+    }
+
+    public function test_disconnect_deletes_the_financial_connection_displayed_by_open_finance(): void
+    {
+        [$user, $wallet] = $this->walletWithMember();
+        $connection = FinancialConnection::query()->create([
+            'wallet_id' => $wallet->id,
+            'provider' => 'pluggy',
+            'external_id' => '123e4567-e89b-12d3-a456-426614174001',
+            'institution_name' => 'Banco Teste',
+            'status' => 'UPDATED',
+        ]);
+        PluggyItem::query()->create([
+            'user_id' => $user->id,
+            'wallet_id' => $wallet->id,
+            'pluggy_item_id' => '123e4567-e89b-12d3-a456-426614174001',
+            'status' => 'UPDATED',
+        ]);
+        config(['services.pluggy.api_key' => 'test-api-key', 'services.pluggy.client_id' => null, 'services.pluggy.client_secret' => null]);
+        Http::fake(['https://api.pluggy.ai/items/123e4567-e89b-12d3-a456-426614174001' => Http::response([], 204)]);
+
+        $this->actingAs($user, 'sanctum')
+            ->deleteJson('/api/v1/open-finance/items/'.$connection->id)
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('financial_connections', ['id' => $connection->id]);
+        $this->assertDatabaseMissing('pluggy_items', ['pluggy_item_id' => '123e4567-e89b-12d3-a456-426614174001']);
+        Http::assertSent(fn ($request): bool => $request->url() === 'https://api.pluggy.ai/items/123e4567-e89b-12d3-a456-426614174001' && $request->method() === 'DELETE');
     }
 
     /** @return array{User, Wallet} */

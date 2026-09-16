@@ -197,6 +197,16 @@ export default function useWallets() {
         setTransactionModalOpen(true);
     };
 
+    const effectivateTransaction = async (transaction) => {
+        setAccountTransactionsError('');
+        try {
+            await FinancialService.effectivateTransaction(transaction.id);
+            await loadAccountTransactions(selectedAccountForTransactions, accountTransactionsFilters);
+        } catch (error) {
+            setAccountTransactionsError(error.message);
+        }
+    };
+
     const submitTransaction = async (event) => {
         event.preventDefault();
         setTransactionErrors({});
@@ -272,5 +282,5 @@ export default function useWallets() {
         loadAccountTransactions(selectedAccountForTransactions, filters);
     };
 
-    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedAccountForTransaction, editingTransaction, requestEditTransaction, accountTransactions, accountTransactionsMeta, accountTransactionsLoading, accountTransactionsError, accountTransactionsFilters, selectedAccountForTransactions, openAccountTransactions, closeAccountTransactions, updateAccountTransactionsFilters, changeAccountTransactionsPage };
+    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedAccountForTransaction, editingTransaction, requestEditTransaction, effectivateTransaction, accountTransactions, accountTransactionsMeta, accountTransactionsLoading, accountTransactionsError, accountTransactionsFilters, selectedAccountForTransactions, openAccountTransactions, closeAccountTransactions, updateAccountTransactionsFilters, changeAccountTransactionsPage };
 }

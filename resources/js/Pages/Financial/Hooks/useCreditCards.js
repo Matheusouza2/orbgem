@@ -136,6 +136,7 @@ export default function useCreditCards() {
     const requestEditPurchase = (purchase) => openCardEdit(null, purchase);
     const requestDeleteInstallment = async (transaction) => { if (!window.confirm('Excluir somente esta parcela?')) return; try { await FinancialService.deleteCreditCardInstallment(transaction.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
     const requestDeletePurchase = async (purchase) => { if (!window.confirm('Excluir todas as parcelas desta compra?')) return; try { await FinancialService.deleteCreditCardPurchase(purchase.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
+    const requestEffectivateTransaction = async (transaction) => { try { await FinancialService.effectivateTransaction(transaction.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
 
     const submitTransaction = async (event) => {
         event.preventDefault();
@@ -205,5 +206,5 @@ export default function useCreditCards() {
         loadCardTransactions(transactionsCard, filters);
     };
 
-    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit, transactionsCard, cardTransactions, transactionsMeta, transactionsLoading, transactionsError, transactionsFilters, openTransactions, closeTransactions, updateTransactionsFilters, changeTransactionsPage, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedCardForTransaction, editingCardTransaction, editingCardPurchase, requestEditInstallment, requestEditPurchase, requestDeleteInstallment, requestDeletePurchase, paymentInvoice, paymentForm, paymentErrors, paymentSubmitting, openPaymentModal, closePaymentModal, submitPayment };
+    return { wallets, accounts, cards, loading, modalOpen, editingCard, errors, submitting, form, openModal, closeModal, changeWallet, submit, transactionsCard, cardTransactions, transactionsMeta, transactionsLoading, transactionsError, transactionsFilters, openTransactions, closeTransactions, updateTransactionsFilters, changeTransactionsPage, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedCardForTransaction, editingCardTransaction, editingCardPurchase, requestEditInstallment, requestEditPurchase, requestDeleteInstallment, requestDeletePurchase, requestEffectivateTransaction, paymentInvoice, paymentForm, paymentErrors, paymentSubmitting, openPaymentModal, closePaymentModal, submitPayment };
 }

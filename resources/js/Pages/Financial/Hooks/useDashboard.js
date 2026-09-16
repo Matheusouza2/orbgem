@@ -286,6 +286,10 @@ export default function useDashboard() {
         await runAction('transaction-delete', () => FinancialService.deleteTransaction(transaction.id), reload);
     };
 
+    const effectivateTransaction = async (transaction) => {
+        await runAction('transaction-effectivate', () => FinancialService.effectivateTransaction(transaction.id), reload);
+    };
+
     const confirmReversal = async (event) => {
         event.preventDefault();
         setReversalErrors({});
@@ -345,6 +349,7 @@ export default function useDashboard() {
         requestReversal,
         requestEdit,
         requestDelete,
+        effectivateTransaction,
         confirmReversal,
         isCurrentContext,
     };

@@ -13,6 +13,7 @@ use App\Http\Resources\TransactionResource;
 use App\Models\User;
 use App\UseCases\Transaction\CreateTransactionUseCase;
 use App\UseCases\Transaction\DeleteTransactionUseCase;
+use App\UseCases\Transaction\EffectivateTransactionUseCase;
 use App\UseCases\Transaction\ListTransactionUseCase;
 use App\UseCases\Transaction\ShowTransactionUseCase;
 use App\UseCases\Transaction\UpdateTransactionUseCase;
@@ -51,6 +52,14 @@ class TransactionController extends Controller
         $user = $request->user();
 
         return new TransactionResource($useCase->execute($transaction, $request->validated(), $user));
+    }
+
+    public function effectivate(int $transaction, EffectivateTransactionUseCase $useCase): TransactionResource
+    {
+        /** @var User $user */
+        $user = request()->user();
+
+        return new TransactionResource($useCase->execute($transaction, $user));
     }
 
     public function destroy(int $transaction, DeleteTransactionUseCase $useCase): Response

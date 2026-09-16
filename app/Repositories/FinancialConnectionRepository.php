@@ -20,6 +20,11 @@ class FinancialConnectionRepository implements FinancialConnectionRepositoryInte
         return FinancialConnection::query()->find($id);
     }
 
+    public function delete(FinancialConnection $connection): void
+    {
+        $connection->delete();
+    }
+
     public function findByProviderExternalId(string $provider, string $externalId): ?FinancialConnection
     {
         return FinancialConnection::query()->where(['provider' => $provider, 'external_id' => $externalId])->first();
