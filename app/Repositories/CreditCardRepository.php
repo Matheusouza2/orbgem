@@ -74,6 +74,7 @@ class CreditCardRepository implements CreditCardRepositoryInterface
                 $query->whereHas('creditCardInvoice', fn ($invoice): mixed => $invoice->where('credit_card_id', $dto->creditCardId))
                     ->orWhereHas('externalTransactions.externalAccount', fn ($account): mixed => $account->where('accountable_type', CreditCard::class)->where('accountable_id', $dto->creditCardId));
             })
+            ->whereDoesntHave('invoicePayments')
             ->when(! $dto->includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->when($dto->status !== null, fn ($query) => $query->where('status', $dto->status))
             ->when($dto->type !== null, fn ($query) => $query->where('type', $dto->type))

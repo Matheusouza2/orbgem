@@ -394,6 +394,13 @@ class CreditCardTest extends TestCase
         $payment = Transaction::query()->where('description', 'Pagamento de fatura 2026-09')->latest('id')->firstOrFail();
         $this->assertSame('2026-09-20', $payment->transaction_date->toDateString());
         $this->assertSame('2026-09-20', $payment->competence_date->toDateString());
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards/'.$card->id.'/transactions?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('invoice_amount', 1000)
+            ->assertJsonMissing(['description' => 'Pagamento de fatura 2026-09']);
     }
 
     /** @return array{User, Wallet, WalletMember} */
