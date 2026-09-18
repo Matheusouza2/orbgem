@@ -91,6 +91,28 @@ class FinancialDashboardTest extends TestCase
             ->assertJsonPath('data.forecast_expenses', 0);
     }
 
+    public function test_summary_balance_ignores_accounts_hidden_from_the_dashboard(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::query()->create(['name' => 'Carteira principal']);
+        WalletMember::query()->create(['wallet_id' => $wallet->id, 'user_id' => $user->id, 'role' => WalletMemberRole::EDITOR, 'joined_at' => now()]);
+        $visibleAccount = Account::query()->create(['wallet_id' => $wallet->id, 'name' => 'Conta visível', 'type' => 'CHECKING', 'initial_balance' => 10000, 'active' => true, 'show_in_dashboard' => true]);
+        Account::query()->create(['wallet_id' => $wallet->id, 'name' => 'Conta oculta', 'type' => 'CHECKING', 'initial_balance' => 5000, 'active' => true, 'show_in_dashboard' => false]);
+
+        $this->actingAs($user)->postJson('/api/v1/transactions', [
+            'wallet_id' => $wallet->id, 'account_id' => $visibleAccount->id, 'description' => 'Salário',
+            'type' => TransactionType::INCOME->value, 'effect' => TransactionEffect::CREDIT->value,
+            'amount' => 2500, 'financial_instrument_type' => FinancialInstrumentType::ACCOUNT->value,
+            'transaction_date' => '2026-09-07', 'competence_date' => '2026-09-07',
+            'status' => TransactionStatus::POSTED->value,
+        ])->assertCreated();
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/monthly-summary?wallet_id='.$wallet->id.'&month=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.balance', 12500);
+    }
+
     public function test_summary_and_account_list_use_the_selected_competence_as_cutoff(): void
     {
         $user = User::factory()->create();

@@ -14,7 +14,7 @@ const money = (value) => (Number(value || 0) / 100).toLocaleString('pt-BR', { st
 function CreditCardSummary({ card, onPay }) {
     const percentage = Number(card.limit_usage_percentage || 0);
     const barWidth = Math.min(percentage, 100);
-    const available = Math.max(0, Number(card.limit || 0) - Number(card.current_invoice_amount || 0));
+    const available = Math.max(0, Number(card.limit || 0) - Number(card.committed_amount ?? card.current_invoice_amount ?? 0));
     const barColor = percentage >= 90 ? 'bg-red-500' : percentage >= 70 ? 'bg-orbital-accent' : 'bg-orbital-primary';
 
     const invoice = {
