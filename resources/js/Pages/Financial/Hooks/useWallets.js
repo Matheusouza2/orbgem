@@ -207,7 +207,7 @@ export default function useWallets() {
         }
     };
 
-    const submitTransaction = async (event) => {
+    const submitTransaction = async (event, { keepOpen = false } = {}) => {
         event.preventDefault();
         setTransactionErrors({});
         setTransactionSubmitting(true);
@@ -225,9 +225,14 @@ export default function useWallets() {
             if (editingTransaction) await FinancialService.updateTransaction(editingTransaction.id, buildTransactionUpdatePayload(payload, editingTransaction));
             else await FinancialService.createTransaction(payload);
             transactionForm.reset();
-            setSelectedAccountForTransaction(null);
+            transactionForm.clearErrors();
             setEditingTransaction(null);
-            setTransactionModalOpen(false);
+            if (keepOpen) {
+                transactionForm.setData((current) => ({ ...current, wallet_id: selectedAccountForTransaction.wallet_id, account_id: selectedAccountForTransaction.id, financial_instrument_type: 'ACCOUNT', transaction_date: new Date().toISOString().slice(0, 10), due_date: new Date().toISOString().slice(0, 10) }));
+            } else {
+                setSelectedAccountForTransaction(null);
+                setTransactionModalOpen(false);
+            }
             if (selectedAccountForTransactions) await loadAccountTransactions(selectedAccountForTransactions, accountTransactionsFilters);
         } catch (error) {
             setTransactionErrors(error?.errors ?? { general: error?.message ?? 'Não foi possível registrar o lançamento.' });

@@ -239,6 +239,12 @@ Resposta de transação inclui os campos enviados e também `id`, `paid_at`, ví
 Atualiza os campos editáveis da transação. O `wallet_id` deve permanecer na
 carteira do usuário autenticado; não envie vínculos controlados pelo servidor.
 
+### `POST /transactions/{transaction}/effectivate`
+
+Efetiva uma transação com status `PROJECTED`, alterando-a para `POSTED` e
+preenchendo `paid_at` no servidor. Não recebe payload e retorna a transação
+atualizada. Transações que já estejam em outro status são rejeitadas.
+
 ### `DELETE /transactions/{transaction}`
 
 Remove a transação autorizada e retorna `204`.
@@ -353,6 +359,45 @@ Filtros opcionais `from` e `to`. Retorna `id`, investimento, data, taxa CDI diá
 ### `GET /investment-income`
 
 Parâmetros `wallet_id`, `investment_id`, `from` e `to`. Retorna rendimentos/proventos com investimento, ticker, descrição, `event_type`, `amount`, `transaction_date` e `source`.
+
+### `POST /investment-income`
+
+Registra um rendimento manual para um investimento. Payload:
+
+```json
+{ "investment_id": 12, "amount": 3500, "transaction_date": "2026-09-13" }
+```
+
+`amount` é informado em centavos. Retorna o rendimento criado com
+`investment_id`, `investment_name`, `ticker`, `description`, `event_type`,
+`amount`, `transaction_date` e `source`.
+
+### `GET /investments/{investment}/positions`
+
+Lista as posições registradas para o investimento. Cada item contém `id`,
+`investment_id`, `position_date`, `value`, `quantity`, `unit_price`,
+`created_at` e `updated_at`. `value` e `unit_price` são inteiros em centavos.
+
+### `POST /investments/{investment}/positions`
+
+Cria ou atualiza a posição do investimento para a data informada. Payload:
+
+```json
+{ "value": 125000, "position_date": "2026-09-13", "quantity": 10.5, "unit_price": 11905 }
+```
+
+`value` é obrigatório e está em centavos; `quantity` e `unit_price` são
+opcionais. Retorna `201` quando uma posição é criada e `200` quando a posição
+da mesma data é atualizada.
+
+### `DELETE /investment-positions/{position}`
+
+Remove a posição autorizada e retorna `204`.
+
+### `GET /investment-position-history?wallet_id={walletId}`
+
+Retorna o histórico agregado das posições da carteira. Cada item contém
+`position_date` e `total_value`, com os valores monetários em centavos.
 
 ### `GET /market/quote?symbol=B3SA3`
 

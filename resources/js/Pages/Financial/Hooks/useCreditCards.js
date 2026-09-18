@@ -7,6 +7,7 @@ import { canPayCreditCardInvoice } from './invoiceActions';
 import { buildCreditCardInstallmentUpdatePayload } from './creditCardTransactionPayload';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível carregar os cartões.' };
+const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function useCreditCards() {
     const [wallets, setWallets] = useState([]);
@@ -96,7 +97,7 @@ export default function useCreditCards() {
     const closeTransactionModal = () => { if (!transactionSubmitting) setTransactionModalOpen(false); };
 
     const openPaymentModal = (card) => {
-        const invoice = { id: card.current_invoice_id, wallet_id: card.wallet_id, reference_month: card.current_invoice_reference_month, status: card.current_invoice_status, amount: card.current_invoice_amount, due_date: card.current_invoice_due_date };
+        const invoice = { id: card.current_invoice_id, credit_card_id: card.id, wallet_id: card.wallet_id, reference_month: card.current_invoice_reference_month, status: card.current_invoice_status, amount: card.current_invoice_amount, due_date: card.current_invoice_due_date };
         if (!canPayCreditCardInvoice(invoice)) return;
         setPaymentErrors({});
         setPaymentInvoice(invoice);
@@ -113,9 +114,11 @@ export default function useCreditCards() {
         try {
             await FinancialService.payCreditCardInvoice(paymentInvoice.id, { account_id: Number(paymentForm.data.account_id), amount: Math.round(Number(paymentForm.data.amount || 0) * 100), payment_date: paymentForm.data.payment_date });
             const updatedCards = await FinancialService.listCreditCards(paymentInvoice.wallet_id);
+            const updatedCard = updatedCards.find((card) => card.id === paymentInvoice.credit_card_id);
             setCards((current) => current.map((card) => updatedCards.find((updated) => updated.id === card.id) ?? card));
             paymentForm.reset();
             setPaymentInvoice(null);
+            if (updatedCard) openTransactions(updatedCard, updatedCard.current_invoice_reference_month);
         } catch (error) {
             setPaymentErrors(error?.errors ?? { general: error?.message ?? 'Não foi possível registrar o pagamento.' });
         } finally {
@@ -138,7 +141,7 @@ export default function useCreditCards() {
     const requestDeletePurchase = async (purchase) => { if (!window.confirm('Excluir todas as parcelas desta compra?')) return; try { await FinancialService.deleteCreditCardPurchase(purchase.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
     const requestEffectivateTransaction = async (transaction) => { try { await FinancialService.effectivateTransaction(transaction.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
 
-    const submitTransaction = async (event) => {
+    const submitTransaction = async (event, { keepOpen = false } = {}) => {
         event.preventDefault();
         setTransactionErrors({});
         setTransactionSubmitting(true);
@@ -160,10 +163,15 @@ export default function useCreditCards() {
             else if (editingCardPurchase) await FinancialService.updateCreditCardPurchase(editingCardPurchase.id, { description: payload.description, purchase_date: payload.purchase_date, total_amount: payload.total_amount, category_id: payload.category_id, merchant_id: payload.merchant_id, is_third_party: payload.is_third_party });
             else await FinancialService.createCreditCardPurchase(payload);
             transactionForm.reset();
-            setSelectedCardForTransaction(null);
+            transactionForm.clearErrors();
             setEditingCardTransaction(null);
             setEditingCardPurchase(null);
-            setTransactionModalOpen(false);
+            if (keepOpen) {
+                transactionForm.setData((current) => ({ ...current, wallet_id: transactionsCard.wallet_id, credit_card_id: transactionsCard.id, financial_instrument_type: 'CREDIT_CARD', type: 'EXPENSE', effect: 'DEBIT', status: 'PROJECTED', transaction_date: new Date().toISOString().slice(0, 10), due_date: new Date().toISOString().slice(0, 10) }));
+            } else {
+                setSelectedCardForTransaction(null);
+                setTransactionModalOpen(false);
+            }
             if (transactionsCard) await loadCardTransactions(transactionsCard, transactionsFilters);
         } catch (error) {
             setTransactionErrors(error?.errors ?? { general: error?.message ?? 'Não foi possível registrar a compra.' });
@@ -188,8 +196,8 @@ export default function useCreditCards() {
         }
     };
 
-    const openTransactions = (card) => {
-        const filters = { month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true };
+    const openTransactions = (card, month = currentMonth()) => {
+        const filters = { month: month || currentMonth(), status: '', type: '', category_id: '', page: 1, include_third_party: true };
         setTransactionsCard({ ...card, onEditInstallment: requestEditInstallment, onEditPurchase: requestEditPurchase, onDeleteInstallment: requestDeleteInstallment, onDeletePurchase: requestDeletePurchase });
         setTransactionsFilters(filters);
         loadCardTransactions(card, filters);

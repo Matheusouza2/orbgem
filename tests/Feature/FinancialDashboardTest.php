@@ -158,6 +158,20 @@ class FinancialDashboardTest extends TestCase
         $this->assertStringContainsString('summary.income_status_breakdown', $insights);
     }
 
+    public function test_transaction_modal_supports_saving_and_starting_the_next_launch(): void
+    {
+        $modal = file_get_contents(resource_path('js/Pages/Financial/Components/TransactionModal.jsx'));
+        $dashboardHook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useDashboard.js'));
+        $walletHook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useWallets.js'));
+        $cardHook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useCreditCards.js'));
+
+        $this->assertStringContainsString('Salvar e Lançar próximo', $modal);
+        $this->assertStringContainsString('onSubmitAndContinue', $modal);
+        foreach ([$dashboardHook, $walletHook, $cardHook] as $hook) {
+            $this->assertStringContainsString('keepOpen', $hook);
+        }
+    }
+
     public function test_dashboard_frontend_exposes_daily_movement_flows_through_its_layers(): void
     {
         $dashboard = file_get_contents(resource_path('js/Pages/Financial/Dashboard.jsx'));
@@ -257,6 +271,14 @@ class FinancialDashboardTest extends TestCase
         $this->assertStringContainsString('deleteCreditCardPurchase', $service);
         $this->assertStringContainsString("onFilter('type'", $modal);
         $this->assertStringContainsString("onFilter('category_id'", $modal);
+    }
+
+    public function test_card_payment_reopens_movements_on_the_next_open_invoice(): void
+    {
+        $hook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useCreditCards.js'));
+
+        $this->assertStringContainsString('const updatedCard = updatedCards.find', $hook);
+        $this->assertStringContainsString('openTransactions(updatedCard, updatedCard.current_invoice_reference_month)', $hook);
     }
 
     public function test_account_movements_expose_transaction_edit_action(): void

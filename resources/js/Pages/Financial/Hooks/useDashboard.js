@@ -186,7 +186,7 @@ export default function useDashboard() {
         return null;
     };
 
-    const submitTransaction = async (event) => {
+    const submitTransaction = async (event, { keepOpen = false } = {}) => {
         event.preventDefault();
         setApiErrors({});
         const requestError = await runAction('transaction', () => {
@@ -221,6 +221,7 @@ export default function useDashboard() {
         if (requestError) setApiErrors(normalizeErrors(requestError));
         else {
             form.reset();
+            form.clearErrors();
             setEditingTransaction(null);
         }
 
