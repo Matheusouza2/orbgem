@@ -16,6 +16,7 @@ class ListAccountRequest extends FormRequest
         return [
             'wallet_id' => ['required', 'integer', 'exists:wallets,id'],
             'month' => ['nullable', 'date_format:Y-m'],
+            'include_third_party' => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -13,7 +13,7 @@ class ListCreditCardsUseCase
 {
     public function __construct(private CreditCardService $cards, private WalletMembershipAuthorization $auth) {}
 
-    public function execute(int $walletId, User $user, ?string $month = null): Collection
+    public function execute(int $walletId, User $user, ?string $month = null, bool $includeThirdParty = true): Collection
     {
         $wallet = $this->auth->walletsFor($user)->firstWhere('id', $walletId);
         if (! $wallet) {
@@ -26,13 +26,13 @@ class ListCreditCardsUseCase
             return $cards;
         }
 
-        return $cards->map(function ($card) use ($month) {
+        return $cards->map(function ($card) use ($month, $includeThirdParty) {
             $card->setAttribute('dashboard_balance', $this->cards->transactionsAmount(new CreditCardTransactionListDTO(
                 walletId: $card->wallet_id,
                 month: $month,
                 creditCardId: $card->id,
                 status: null,
-                includeThirdParty: true,
+                includeThirdParty: $includeThirdParty,
                 page: 1,
                 perPage: 1,
             )));

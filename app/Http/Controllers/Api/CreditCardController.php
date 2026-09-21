@@ -27,7 +27,7 @@ class CreditCardController extends Controller
 
     public function index(Request $request, ListCreditCardsUseCase $useCase)
     {
-        return CreditCardResource::collection($useCase->execute($request->integer('wallet_id'), $request->user(), $request->input('month')));
+        return CreditCardResource::collection($useCase->execute($request->integer('wallet_id'), $request->user(), $request->input('month'), $request->boolean('include_third_party', true)));
     }
 
     public function transactions(ListCreditCardTransactionsRequest $request, CreditCard $creditCard, ListCreditCardTransactionsUseCase $useCase)

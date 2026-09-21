@@ -39,7 +39,7 @@ export default function useDashboard() {
     const [selectedWalletId, setSelectedWalletId] = useState('');
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [month, setMonth] = useState(currentMonth);
-    const [includeThirdParty, setIncludeThirdParty] = useState(true);
+    const [includeThirdParty, setIncludeThirdParty] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [action, setAction] = useState(null);
@@ -102,8 +102,8 @@ export default function useDashboard() {
         setError('');
 
         Promise.all([
-            FinancialService.listAccounts(selectedWalletId, { signal: controller.signal, month }),
-            FinancialService.listCreditCards(selectedWalletId, { signal: controller.signal, month }),
+            FinancialService.listAccounts(selectedWalletId, { signal: controller.signal, month, includeThirdParty }),
+            FinancialService.listCreditCards(selectedWalletId, { signal: controller.signal, month, includeThirdParty }),
             FinancialService.listMerchants(selectedWalletId, { signal: controller.signal }),
             FinancialService.listCategories(selectedWalletId, { signal: controller.signal }),
             FinancialService.listTransactions(selectedWalletId, selectedAccountId, month, { signal: controller.signal }),
@@ -143,8 +143,8 @@ export default function useDashboard() {
         if (!selectedWalletId) return;
 
         const [availableAccounts, availableCreditCards, availableMerchants, availableCategories, availableTransactions, availableSummary, availablePreviousSummary, availableNextSummary] = await Promise.all([
-            FinancialService.listAccounts(selectedWalletId, { month }),
-            FinancialService.listCreditCards(selectedWalletId, { month }),
+            FinancialService.listAccounts(selectedWalletId, { month, includeThirdParty }),
+            FinancialService.listCreditCards(selectedWalletId, { month, includeThirdParty }),
             FinancialService.listMerchants(selectedWalletId),
             FinancialService.listCategories(selectedWalletId),
             FinancialService.listTransactions(selectedWalletId, selectedAccountId, month),
@@ -189,6 +189,17 @@ export default function useDashboard() {
     const submitTransaction = async (event, { keepOpen = false } = {}) => {
         event.preventDefault();
         setApiErrors({});
+        const nextTransactionContext = {
+            wallet_id: Number(selectedWalletId),
+            account_id: form.data.financial_instrument_type === 'ACCOUNT' ? form.data.account_id : null,
+            credit_card_id: form.data.financial_instrument_type === 'CREDIT_CARD' ? form.data.credit_card_id : null,
+            financial_instrument_type: form.data.financial_instrument_type,
+            type: form.data.type,
+            effect: effectForType(form.data.type),
+            status: form.data.financial_instrument_type === 'CREDIT_CARD' ? 'PROJECTED' : form.data.status,
+            transaction_date: new Date().toISOString().slice(0, 10),
+            due_date: new Date().toISOString().slice(0, 10),
+        };
         const requestError = await runAction('transaction', () => {
             const transactionData = {
                 ...form.data,
@@ -223,6 +234,7 @@ export default function useDashboard() {
             form.reset();
             form.clearErrors();
             setEditingTransaction(null);
+            if (keepOpen) form.setData((current) => ({ ...current, ...nextTransactionContext }));
         }
 
         return requestError;

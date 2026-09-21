@@ -2,6 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\TransactionStatus;
+use App\Models\Transaction;
+use App\Services\FinancialReminderNotificationService;
 use App\Services\TransactionService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -12,9 +15,16 @@ use Illuminate\Support\Carbon;
 #[Description('Efetiva previsões configuradas para serem pagas no vencimento')]
 class PostDueTransactions extends Command
 {
-    public function handle(TransactionService $transactions): int
+    public function handle(TransactionService $transactions, FinancialReminderNotificationService $notifications): int
     {
-        $posted = $transactions->postDueAutomatically($this->option('date') ?: Carbon::today()->toDateString());
+        $date = $this->option('date') ?: Carbon::today()->toDateString();
+        $transactionIds = Transaction::query()
+            ->where('status', TransactionStatus::PROJECTED)
+            ->where('auto_post_on_due_date', true)
+            ->whereDate('due_date', '<=', $date)
+            ->pluck('id');
+        $posted = $transactions->postDueAutomatically($date);
+        Transaction::query()->whereIn('id', $transactionIds)->get()->each($notifications->notifyTransactionPaid(...));
         $this->info("{$posted} transação(ões) efetivada(s).");
 
         return self::SUCCESS;

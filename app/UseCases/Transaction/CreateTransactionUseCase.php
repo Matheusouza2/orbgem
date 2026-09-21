@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AccountService;
 use App\Services\CategoryService;
+use App\Services\FinancialReminderNotificationService;
 use App\Services\MerchantService;
 use App\Services\TransactionService;
 use App\Services\WalletMembershipAuthorization;
@@ -21,7 +22,7 @@ use Illuminate\Validation\ValidationException;
 
 class CreateTransactionUseCase
 {
-    public function __construct(private TransactionService $transactionService, private WalletService $walletService, private AccountService $accountService, private CategoryService $categoryService, private MerchantService $merchantService, private WalletMembershipAuthorization $membershipAuthorization) {}
+    public function __construct(private TransactionService $transactionService, private WalletService $walletService, private AccountService $accountService, private CategoryService $categoryService, private MerchantService $merchantService, private WalletMembershipAuthorization $membershipAuthorization, private FinancialReminderNotificationService $notifications) {}
 
     public function execute(TransactionDTO $dto, User $user): Transaction
     {
@@ -55,7 +56,10 @@ class CreateTransactionUseCase
                 }
             }
 
-            return $this->transactionService->create($dto->withMemberId($member->id));
+            $transaction = $this->transactionService->create($dto->withMemberId($member->id));
+            $this->notifications->notifyTransactionPaid($transaction);
+
+            return $transaction;
         });
     }
 }

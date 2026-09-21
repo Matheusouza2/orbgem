@@ -7,6 +7,7 @@ use App\Enums\WalletMemberRole;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\TransactionService;
+use App\Services\FinancialReminderNotificationService;
 use App\Services\WalletMembershipAuthorization;
 use App\Services\WalletService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -19,6 +20,7 @@ class EffectivateTransactionUseCase
         private TransactionService $transactions,
         private WalletService $wallets,
         private WalletMembershipAuthorization $authorization,
+        private FinancialReminderNotificationService $notifications,
     ) {}
 
     public function execute(int $transactionId, User $user): Transaction
@@ -43,7 +45,10 @@ class EffectivateTransactionUseCase
                 'updated_by_member_id' => $member->id,
             ]);
 
-            return $transaction->refresh();
+            $transaction = $transaction->refresh();
+            $this->notifications->notifyTransactionPaid($transaction);
+
+            return $transaction;
         });
     }
 }

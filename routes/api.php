@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\MerchantController;
 use App\Http\Controllers\Api\MonthlySummaryController;
 use App\Http\Controllers\Api\OpenFinanceController;
 use App\Http\Controllers\Api\PlanningSummaryController;
+use App\Http\Controllers\Api\PushTokenController;
 use App\Http\Controllers\Api\RecurringTransactionController;
 use App\Http\Controllers\Api\Slice5Controller;
 use App\Http\Controllers\Api\TransactionController;
@@ -129,6 +130,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('/attachments/{attachment}', [Slice5Controller::class, 'deleteAttachment'])->whereNumber('attachment');
     Route::get('/notifications', [Slice5Controller::class, 'listNotifications']);
     Route::patch('/notifications/{notification}/read', [Slice5Controller::class, 'readNotification'])->whereNumber('notification');
+    Route::post('/mobile/push-tokens', [PushTokenController::class, 'store']);
+    Route::delete('/mobile/push-tokens', [PushTokenController::class, 'destroy']);
     Route::post('/imports', [Slice5Controller::class, 'import']);
     Route::get('/imports/{import}', [Slice5Controller::class, 'importBatch'])->whereNumber('import');
 });

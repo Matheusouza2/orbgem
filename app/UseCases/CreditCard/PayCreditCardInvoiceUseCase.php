@@ -14,6 +14,7 @@ use App\Models\CreditCardInvoice;
 use App\Models\User;
 use App\Services\AccountService;
 use App\Services\CreditCardInvoiceService;
+use App\Services\FinancialReminderNotificationService;
 use App\Services\InvoicePaymentService;
 use App\Services\TransactionService;
 use App\Services\WalletMembershipAuthorization;
@@ -24,7 +25,7 @@ use Illuminate\Validation\ValidationException;
 
 class PayCreditCardInvoiceUseCase
 {
-    public function __construct(private CreditCardInvoiceService $invoices, private InvoicePaymentService $payments, private TransactionService $transactions, private AccountService $accounts, private WalletMembershipAuthorization $auth) {}
+    public function __construct(private CreditCardInvoiceService $invoices, private InvoicePaymentService $payments, private TransactionService $transactions, private AccountService $accounts, private WalletMembershipAuthorization $auth, private FinancialReminderNotificationService $notifications) {}
 
     public function execute(PayCreditCardInvoiceDTO $dto, User $user): CreditCardInvoice
     {
@@ -48,6 +49,7 @@ class PayCreditCardInvoiceUseCase
                 $invoice->status = CreditCardInvoiceStatus::PAID;
                 $invoice->paid_at = $now;
                 $this->invoices->save($invoice);
+                $this->notifications->notifyInvoicePaid($invoice->refresh());
             }
 
             return $this->invoices->find($invoice->id);

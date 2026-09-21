@@ -142,20 +142,56 @@ class FinancialDashboardTest extends TestCase
             ->assertOk()->assertJsonPath('data.0.dashboard_balance', 12000);
     }
 
+    public function test_dashboard_calculations_can_exclude_third_party_transactions(): void
+    {
+        $user = User::factory()->create();
+        $wallet = Wallet::query()->create(['name' => 'Carteira principal']);
+        WalletMember::query()->create(['wallet_id' => $wallet->id, 'user_id' => $user->id, 'role' => WalletMemberRole::EDITOR, 'joined_at' => now()]);
+        $account = Account::query()->create(['wallet_id' => $wallet->id, 'name' => 'Conta corrente', 'type' => 'CHECKING', 'initial_balance' => 10000, 'active' => true]);
+
+        foreach ([
+            ['description' => 'Despesa pessoal', 'amount' => 500, 'is_third_party' => false],
+            ['description' => 'Despesa de terceiro', 'amount' => 700, 'is_third_party' => true],
+        ] as $transaction) {
+            $this->actingAs($user)->postJson('/api/v1/transactions', [
+                'wallet_id' => $wallet->id, 'account_id' => $account->id, 'description' => $transaction['description'],
+                'type' => TransactionType::EXPENSE->value, 'effect' => TransactionEffect::DEBIT->value,
+                'amount' => $transaction['amount'], 'financial_instrument_type' => FinancialInstrumentType::ACCOUNT->value,
+                'transaction_date' => '2026-09-07', 'competence_date' => '2026-09-07',
+                'status' => TransactionStatus::POSTED->value, 'is_third_party' => $transaction['is_third_party'],
+            ])->assertCreated();
+        }
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/monthly-summary?wallet_id='.$wallet->id.'&month=2026-09&include_third_party=0')
+            ->assertOk()
+            ->assertJsonPath('data.balance', 9500)
+            ->assertJsonPath('data.actual_expenses', 500)
+            ->assertJsonPath('data.forecast_expenses', 500);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/accounts?wallet_id='.$wallet->id.'&month=2026-09&include_third_party=0')
+            ->assertOk()
+            ->assertJsonPath('data.0.dashboard_balance', 9500);
+    }
+
     public function test_dashboard_frontend_requests_and_renders_competence_scoped_values(): void
     {
         $hook = file_get_contents(resource_path('js/Pages/Financial/Hooks/useDashboard.js'));
         $service = file_get_contents(resource_path('js/Services/FinancialService.js'));
         $insights = file_get_contents(resource_path('js/Pages/Financial/Components/DashboardInsights.jsx'));
 
-        $this->assertStringContainsString('listAccounts(selectedWalletId, { signal: controller.signal, month })', $hook);
-        $this->assertStringContainsString('listCreditCards(selectedWalletId, { signal: controller.signal, month })', $hook);
+        $this->assertStringContainsString('listAccounts(selectedWalletId, { signal: controller.signal, month, includeThirdParty })', $hook);
+        $this->assertStringContainsString('listCreditCards(selectedWalletId, { signal: controller.signal, month, includeThirdParty })', $hook);
         $this->assertStringContainsString("params.set('month', month)", $service);
         $this->assertStringContainsString('account.dashboard_balance', $insights);
         $this->assertStringContainsString('card.dashboard_balance', $insights);
         $this->assertStringContainsString('summary.expense_by_category', $insights);
         $this->assertStringContainsString('summary.expense_status_breakdown', $insights);
         $this->assertStringContainsString('summary.income_status_breakdown', $insights);
+        $this->assertStringContainsString('useState(false)', $hook);
+        $this->assertStringContainsString('if (keepOpen)', $hook);
+        $this->assertStringContainsString('wallet_id: Number(selectedWalletId)', $hook);
     }
 
     public function test_transaction_modal_supports_saving_and_starting_the_next_launch(): void
@@ -253,6 +289,9 @@ class FinancialDashboardTest extends TestCase
         }
         $this->assertStringContainsString('Total filtrado', $modal);
         $this->assertStringContainsString('meta?.total_amount', $modal);
+        $this->assertStringContainsString("card?.current_invoice_status === 'PAID'", $modal);
+        $this->assertStringContainsString('Fatura paga', $modal);
+        $this->assertStringContainsString('role="status"', $modal);
         $this->assertStringContainsString('formatDateBR(transaction.due_date)', $modal);
         $this->assertStringContainsString("onFilter('type'", $modal);
         $this->assertStringContainsString("onFilter('category_id'", $modal);

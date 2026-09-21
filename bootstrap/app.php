@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('planning:generate-recurring')->daily()->withoutOverlapping(30);
         $schedule->command('planning:generate-commitments')->daily()->withoutOverlapping(30);
         $schedule->command('transactions:post-due')->daily()->withoutOverlapping(30);
+        $schedule->command('notifications:send-financial-reminders')->daily()->withoutOverlapping(30);
         $schedule->command('investments:accrue-cdi')->daily()->withoutOverlapping(30);
     })
     ->withMiddleware(function (Middleware $middleware): void {

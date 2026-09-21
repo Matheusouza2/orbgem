@@ -118,6 +118,19 @@ class CreditCardTest extends TestCase
             ->assertJsonPath('data.0.dashboard_balance', 1000);
     }
 
+    public function test_card_dashboard_balance_can_exclude_third_party_expenses(): void
+    {
+        [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);
+        $card = $this->creditCard($wallet);
+        $this->createPurchase($user, $wallet, $card);
+        Transaction::query()->firstOrFail()->update(['is_third_party' => true]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/credit-cards?wallet_id='.$wallet->id.'&month=2026-09&include_third_party=0')
+            ->assertOk()
+            ->assertJsonPath('data.0.dashboard_balance', 0);
+    }
+
     public function test_card_list_includes_the_previous_invoice_summary(): void
     {
         [$user, $wallet] = $this->walletWithMember(WalletMemberRole::OWNER);

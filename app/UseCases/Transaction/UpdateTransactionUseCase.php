@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AccountService;
 use App\Services\CategoryService;
+use App\Services\FinancialReminderNotificationService;
 use App\Services\MerchantService;
 use App\Services\TransactionService;
 use App\Services\WalletMembershipAuthorization;
@@ -27,6 +28,7 @@ class UpdateTransactionUseCase
         private CategoryService $categoryService,
         private MerchantService $merchantService,
         private WalletMembershipAuthorization $membershipAuthorization,
+        private FinancialReminderNotificationService $notifications,
     ) {}
 
     /** @param array<string, mixed> $attributes */
@@ -45,11 +47,17 @@ class UpdateTransactionUseCase
             }
             $member = $this->membershipAuthorization->authorize($user, $wallet, WalletMemberRole::EDITOR, WalletMemberRole::OWNER);
             $this->validateDependencies($attributes, $transaction->wallet_id);
+            $wasPaid = $transaction->paid_at !== null;
 
             $transaction->fill($this->editableAttributes($attributes, $member->id));
             $transaction->save();
 
-            return $transaction->refresh();
+            $transaction = $transaction->refresh();
+            if (! $wasPaid && $transaction->paid_at !== null) {
+                $this->notifications->notifyTransactionPaid($transaction);
+            }
+
+            return $transaction;
         });
     }
 

@@ -22,7 +22,7 @@ class ListAccountUseCase
         private AccountBalanceCalculator $balanceCalculator,
     ) {}
 
-    public function execute(int $walletId, User $user, ?string $month = null): Collection
+    public function execute(int $walletId, User $user, ?string $month = null, bool $includeThirdParty = true): Collection
     {
         $wallet = $this->walletService->find($walletId);
 
@@ -44,10 +44,10 @@ class ListAccountUseCase
             return $accounts;
         }
 
-        return $accounts->map(function ($account) use ($month) {
+        return $accounts->map(function ($account) use ($month, $includeThirdParty) {
             $account->setAttribute('dashboard_balance', $this->balanceCalculator->calculate(
                 $account->initial_balance,
-                $this->transactionService->postedAmountsForAccountThroughMonth($account->id, $month),
+                $this->transactionService->postedAmountsForAccountThroughMonth($account->id, $month, $includeThirdParty),
             ));
 
             return $account;

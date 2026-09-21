@@ -29,6 +29,11 @@ class User extends Authenticatable
         return $this->walletMemberships();
     }
 
+    public function pushTokens(): HasMany
+    {
+        return $this->hasMany(DevicePushToken::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
