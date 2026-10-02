@@ -87,6 +87,7 @@ const FinancialService = {
     createInvestmentIncome: async (payload, options = {}) => request('/api/v1/investment-income', { method: 'POST', body: JSON.stringify(payload), ...options }),
     listInvestmentPositions: async (investmentId, options = {}) => (await request(`/api/v1/investments/${investmentId}/positions`, options)).data,
     upsertInvestmentPosition: async (investmentId, payload, options = {}) => request(`/api/v1/investments/${investmentId}/positions`, { method: 'POST', body: JSON.stringify(payload), ...options }),
+    updateInvestmentPosition: async (positionId, payload, options = {}) => request(`/api/v1/investment-positions/${positionId}`, { method: 'PUT', body: JSON.stringify(payload), ...options }),
     deleteInvestmentPosition: async (positionId, options = {}) => request(`/api/v1/investment-positions/${positionId}`, { method: 'DELETE', ...options }),
     listInvestmentPositionHistory: async (walletId, options = {}) => (await request(`/api/v1/investment-position-history?wallet_id=${walletId}`, options)).data,
     createInvestment: async (payload, options = {}) => request('/api/v1/investments', { method: 'POST', body: JSON.stringify(payload), ...options }),

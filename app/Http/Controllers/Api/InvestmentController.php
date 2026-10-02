@@ -4,30 +4,31 @@ namespace App\Http\Controllers\Api;
 
 use App\DTO\InvestmentDTO;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Investment\CreateInvestmentRequest;
-use App\Http\Requests\Investment\CreateInvestmentPositionRequest;
 use App\Http\Requests\Investment\CreateInvestmentIncomeRequest;
+use App\Http\Requests\Investment\CreateInvestmentPositionRequest;
+use App\Http\Requests\Investment\CreateInvestmentRequest;
 use App\Http\Requests\Investment\ListInvestmentIncomeRequest;
 use App\Http\Requests\Investment\ListInvestmentRequest;
 use App\Http\Requests\Investment\ListInvestmentYieldsRequest;
 use App\Http\Resources\InvestmentIncomeResource;
-use App\Http\Resources\InvestmentResource;
 use App\Http\Resources\InvestmentPositionHistoryResource;
 use App\Http\Resources\InvestmentPositionResource;
+use App\Http\Resources\InvestmentResource;
 use App\Http\Resources\InvestmentYieldResource;
 use App\Models\Investment;
 use App\Models\InvestmentPosition;
-use App\UseCases\Investment\CreateInvestmentUseCase;
 use App\UseCases\Investment\CreateInvestmentIncomeUseCase;
+use App\UseCases\Investment\CreateInvestmentUseCase;
+use App\UseCases\Investment\DeleteInvestmentPositionUseCase;
 use App\UseCases\Investment\DeleteInvestmentUseCase;
 use App\UseCases\Investment\ListInvestmentIncomeUseCase;
-use App\UseCases\Investment\ListInvestmentsUseCase;
 use App\UseCases\Investment\ListInvestmentPositionHistoryUseCase;
 use App\UseCases\Investment\ListInvestmentPositionsUseCase;
+use App\UseCases\Investment\ListInvestmentsUseCase;
 use App\UseCases\Investment\ListInvestmentYieldsUseCase;
-use App\UseCases\Investment\DeleteInvestmentPositionUseCase;
-use App\UseCases\Investment\UpsertInvestmentPositionUseCase;
+use App\UseCases\Investment\UpdateInvestmentPositionUseCase;
 use App\UseCases\Investment\UpdateInvestmentUseCase;
+use App\UseCases\Investment\UpsertInvestmentPositionUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -75,6 +76,11 @@ class InvestmentController extends Controller
         $position = $useCase->execute($investment, $request->validated(), $request->user());
 
         return (new InvestmentPositionResource($position))->response()->setStatusCode($position->wasRecentlyCreated ? 201 : 200);
+    }
+
+    public function updatePosition(CreateInvestmentPositionRequest $request, InvestmentPosition $position, UpdateInvestmentPositionUseCase $useCase): InvestmentPositionResource
+    {
+        return new InvestmentPositionResource($useCase->execute($position, $request->validated(), $request->user()));
     }
 
     public function deletePosition(Request $request, InvestmentPosition $position, DeleteInvestmentPositionUseCase $useCase): Response

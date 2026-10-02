@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import CreditCard from '@/Models/CreditCard';
 import Transaction from '@/Models/Transaction';
@@ -23,6 +23,8 @@ export default function useCreditCards() {
     const [transactionsMeta, setTransactionsMeta] = useState(null);
     const [transactionsLoading, setTransactionsLoading] = useState(false);
     const [transactionsError, setTransactionsError] = useState('');
+    const transactionsRequestId = useRef(0);
+    const transactionsAbort = useRef(null);
     const [transactionsFilters, setTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true });
     const [transactionModalOpen, setTransactionModalOpen] = useState(false);
     const [transactionCategories, setTransactionCategories] = useState([]);
@@ -167,7 +169,7 @@ export default function useCreditCards() {
             setEditingCardTransaction(null);
             setEditingCardPurchase(null);
             if (keepOpen) {
-                transactionForm.setData((current) => ({ ...current, wallet_id: transactionsCard.wallet_id, credit_card_id: transactionsCard.id, financial_instrument_type: 'CREDIT_CARD', type: 'EXPENSE', effect: 'DEBIT', status: 'PROJECTED', transaction_date: new Date().toISOString().slice(0, 10), due_date: new Date().toISOString().slice(0, 10) }));
+                transactionForm.setData((current) => ({ ...current, wallet_id: selectedCardForTransaction.wallet_id, credit_card_id: selectedCardForTransaction.id, financial_instrument_type: 'CREDIT_CARD', type: 'EXPENSE', effect: 'DEBIT', status: 'PROJECTED', transaction_date: new Date().toISOString().slice(0, 10), due_date: new Date().toISOString().slice(0, 10) }));
             } else {
                 setSelectedCardForTransaction(null);
                 setTransactionModalOpen(false);
@@ -182,17 +184,23 @@ export default function useCreditCards() {
 
     const loadCardTransactions = async (card, filters = transactionsFilters) => {
         if (!card) return;
+        const requestId = ++transactionsRequestId.current;
+        transactionsAbort.current?.abort();
+        const controller = new AbortController();
+        transactionsAbort.current = controller;
         setTransactionsLoading(true);
         setTransactionsError('');
         try {
-            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, type: filters.type, category_id: filters.category_id, include_third_party: filters.include_third_party ? '1' : '0', sort_by: 'due_date', sort_direction: 'desc', page: filters.page, per_page: 20 });
-            setCardTransactions(response.data ?? []);
-            setTransactionsCard((current) => current ? { ...current, current_invoice_amount: response.invoice_amount ?? 0 } : current);
-            setTransactionsMeta(response.meta ? { ...response.meta, total_amount: Number(response.total_amount ?? 0) } : null);
+            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, type: filters.type, category_id: filters.category_id, include_third_party: filters.include_third_party ? '1' : '0', sort_by: 'due_date', sort_direction: 'desc', page: filters.page, per_page: 20 }, { signal: controller.signal });
+            if (requestId === transactionsRequestId.current) {
+                setCardTransactions(response.data ?? []);
+                setTransactionsCard((current) => current ? { ...current, current_invoice_amount: response.invoice_amount ?? 0 } : current);
+                setTransactionsMeta(response.meta ? { ...response.meta, total_amount: Number(response.total_amount ?? 0) } : null);
+            }
         } catch (error) {
-            setTransactionsError(error.message);
+            if (requestId === transactionsRequestId.current && error.name !== 'AbortError') setTransactionsError(error.message);
         } finally {
-            setTransactionsLoading(false);
+            if (requestId === transactionsRequestId.current) setTransactionsLoading(false);
         }
     };
 

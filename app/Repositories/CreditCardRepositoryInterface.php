@@ -27,4 +27,7 @@ interface CreditCardRepositoryInterface
     public function transactionsAmount(CreditCardTransactionListDTO $dto): int;
 
     public function transactionsNetAmount(CreditCardTransactionListDTO $dto): int;
+
+    /** @return array{amount: int, net_amount: int} */
+    public function transactionsSummary(CreditCardTransactionListDTO $dto): array;
 }

@@ -375,7 +375,8 @@ Registra um rendimento manual para um investimento. Payload:
 ### `GET /investments/{investment}/positions`
 
 Lista as posições registradas para o investimento. Cada item contém `id`,
-`investment_id`, `position_date`, `value`, `quantity`, `unit_price`,
+`investment_id`, `position_date`, `entry_type` (`SNAPSHOT` ou `CONTRIBUTION`),
+`value`, `quantity`, `unit_price`,
 `created_at` e `updated_at`. `value` e `unit_price` são inteiros em centavos.
 
 ### `POST /investments/{investment}/positions`
@@ -383,12 +384,18 @@ Lista as posições registradas para o investimento. Cada item contém `id`,
 Cria ou atualiza a posição do investimento para a data informada. Payload:
 
 ```json
-{ "value": 125000, "position_date": "2026-09-13", "quantity": 10.5, "unit_price": 11905 }
+{ "entry_type": "CONTRIBUTION", "value": 125000, "position_date": "2026-09-13", "quantity": 10.5, "unit_price": 11905 }
 ```
 
+`value` de um `CONTRIBUTION` representa o aporte em centavos e atualiza `invested_amount` e `current_value`; ao editar ou excluir, o total é ajustado pela diferença. `SNAPSHOT` representa o valor total observado naquela data. Se omitido, `entry_type` usa `SNAPSHOT` para compatibilidade com clientes anteriores.
+
 `value` é obrigatório e está em centavos; `quantity` e `unit_price` são
-opcionais. Retorna `201` quando uma posição é criada e `200` quando a posição
-da mesma data é atualizada.
+opcionais. Retorna `201` quando cria um lançamento e `200` quando atualiza o
+lançamento do mesmo tipo e data.
+
+### `PUT /investment-positions/{position}`
+
+Atualiza um aporte ou snapshot existente com os mesmos campos do POST. Alterar data para outra que já tenha um lançamento do mesmo tipo retorna erro de validação.
 
 ### `DELETE /investment-positions/{position}`
 
@@ -397,7 +404,9 @@ Remove a posição autorizada e retorna `204`.
 ### `GET /investment-position-history?wallet_id={walletId}`
 
 Retorna o histórico agregado das posições da carteira. Cada item contém
-`position_date` e `total_value`, com os valores monetários em centavos.
+`position_date`, `total_value` e `contribution_amount`, com os valores monetários
+em centavos. `contribution_amount` soma os aportes registrados naquela data e é
+zero quando não há aporte.
 
 ### `GET /market/quote?symbol=B3SA3`
 

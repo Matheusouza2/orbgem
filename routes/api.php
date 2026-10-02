@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/investments/{investment}/yields', [InvestmentController::class, 'yields'])->whereNumber('investment');
     Route::get('/investments/{investment}/positions', [InvestmentController::class, 'positions'])->whereNumber('investment');
     Route::post('/investments/{investment}/positions', [InvestmentController::class, 'upsertPosition'])->whereNumber('investment');
+    Route::put('/investment-positions/{position}', [InvestmentController::class, 'updatePosition'])->whereNumber('position');
     Route::delete('/investment-positions/{position}', [InvestmentController::class, 'deletePosition'])->whereNumber('position');
     Route::get('/investment-position-history', [InvestmentController::class, 'positionHistory']);
     Route::post('/consolidations', [Slice5Controller::class, 'createConsolidation']);

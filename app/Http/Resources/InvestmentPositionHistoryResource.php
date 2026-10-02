@@ -12,6 +12,7 @@ class InvestmentPositionHistoryResource extends JsonResource
         return [
             'position_date' => $this->resource['position_date'],
             'total_value' => $this->resource['total_value'],
+            'contribution_amount' => $this->resource['contribution_amount'] ?? 0,
         ];
     }
 }

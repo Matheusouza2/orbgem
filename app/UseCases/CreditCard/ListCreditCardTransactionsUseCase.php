@@ -24,10 +24,9 @@ class ListCreditCardTransactionsUseCase
 
         $this->authorization->authorize($user, $card->wallet, WalletMemberRole::OWNER, WalletMemberRole::EDITOR, WalletMemberRole::VIEWER);
 
-        return new CreditCardTransactionListResult(
-            transactions: $this->cards->transactions($dto),
-            amount: $this->cards->transactionsAmount($dto),
-            totalAmount: $this->cards->transactionsNetAmount($dto),
-        );
+        $transactions = $this->cards->transactions($dto);
+        $summary = $this->cards->transactionsSummary($dto);
+
+        return new CreditCardTransactionListResult($transactions, $summary['amount'], $summary['net_amount']);
     }
 }

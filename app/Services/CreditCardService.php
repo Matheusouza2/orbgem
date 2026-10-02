@@ -57,4 +57,10 @@ class CreditCardService
     {
         return $this->repository->transactionsNetAmount($dto);
     }
+
+    /** @return array{amount: int, net_amount: int} */
+    public function transactionsSummary(CreditCardTransactionListDTO $dto): array
+    {
+        return $this->repository->transactionsSummary($dto);
+    }
 }

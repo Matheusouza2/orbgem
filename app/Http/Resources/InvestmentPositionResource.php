@@ -13,6 +13,7 @@ class InvestmentPositionResource extends JsonResource
             'id' => $this->id,
             'investment_id' => $this->investment_id,
             'position_date' => $this->position_date?->toDateString(),
+            'entry_type' => $this->entry_type?->value ?? 'SNAPSHOT',
             'value' => $this->value,
             'quantity' => $this->quantity,
             'unit_price' => $this->unit_price,

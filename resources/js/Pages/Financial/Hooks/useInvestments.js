@@ -25,20 +25,19 @@ export default function useInvestments() {
     const [quoteLoading, setQuoteLoading] = useState(false);
     const [quoteMessage, setQuoteMessage] = useState('');
     const [positionsOpen, setPositionsOpen] = useState(false);
-    const [filtersOpen, setFiltersOpen] = useState(false);
     const [incomeOpen, setIncomeOpen] = useState(false);
     const [manualIncomeOpen, setManualIncomeOpen] = useState(false);
     const [manualIncomeErrors, setManualIncomeErrors] = useState({});
     const [manualIncomeSubmitting, setManualIncomeSubmitting] = useState(false);
     const [positionInvestment, setPositionInvestment] = useState(null);
+    const [editingPosition, setEditingPosition] = useState(null);
     const [positionHistory, setPositionHistory] = useState([]);
     const [positions, setPositions] = useState([]);
     const [positionModalOpen, setPositionModalOpen] = useState(false);
-    const [positionHistoryOpen, setPositionHistoryOpen] = useState(false);
     const [positionErrors, setPositionErrors] = useState({});
     const [positionSubmitting, setPositionSubmitting] = useState(false);
     const form = useForm({ ...Investment });
-    const positionForm = useForm({ investment_id: '', value: '', position_date: today(), quantity: '', unit_price: '' });
+    const positionForm = useForm({ investment_id: '', entry_type: 'CONTRIBUTION', value: '', position_date: today(), quantity: '', unit_price: '' });
     const manualIncomeForm = useForm({ investment_id: '', amount: '', transaction_date: today() });
 
     const loadInvestments = async (walletId) => {
@@ -143,10 +142,12 @@ export default function useInvestments() {
     const openPositionModal = async (investment = null, position = null) => {
         const selected = investment ?? investments[0] ?? null;
         setPositionInvestment(selected);
+        setEditingPosition(position);
         setPositionErrors({});
         positionForm.reset();
         positionForm.setData({
             investment_id: selected?.id ?? '',
+            entry_type: position?.entry_type ?? 'CONTRIBUTION',
             value: position ? (Number(position.value || 0) / 100).toFixed(2) : '',
             position_date: position?.position_date ?? today(),
             quantity: position?.quantity ?? '',
@@ -169,15 +170,18 @@ export default function useInvestments() {
         setPositionSubmitting(true);
         try {
             const payload = {
+                entry_type: positionForm.data.entry_type || 'CONTRIBUTION',
                 value: Math.round(Number(positionForm.data.value || 0) * 100),
                 position_date: positionForm.data.position_date,
                 quantity: positionForm.data.quantity || null,
                 unit_price: positionForm.data.unit_price ? Math.round(Number(positionForm.data.unit_price) * 100) : null,
             };
-            await FinancialService.upsertInvestmentPosition(positionInvestment.id, payload);
-            await Promise.all([loadPositions(positionInvestment.id), loadPositionHistory(selectedWalletId)]);
+            if (editingPosition) await FinancialService.updateInvestmentPosition(editingPosition.id, payload);
+            else await FinancialService.upsertInvestmentPosition(positionInvestment.id, payload);
+            await Promise.all([loadInvestments(selectedWalletId), loadPositions(positionInvestment.id), loadPositionHistory(selectedWalletId)]);
+            setEditingPosition(null);
             positionForm.reset();
-            positionForm.setData({ investment_id: positionInvestment.id, value: '', position_date: today(), quantity: '', unit_price: '' });
+            positionForm.setData({ investment_id: positionInvestment.id, entry_type: 'CONTRIBUTION', value: '', position_date: today(), quantity: '', unit_price: '' });
         } catch (error) {
             setPositionErrors(normalizeErrors(error));
         } finally {
@@ -189,7 +193,7 @@ export default function useInvestments() {
         if (!window.confirm('Excluir esta posição?')) return;
         try {
             await FinancialService.deleteInvestmentPosition(position.id);
-            await Promise.all([loadPositions(positionInvestment.id), loadPositionHistory(selectedWalletId)]);
+            await Promise.all([loadInvestments(selectedWalletId), loadPositions(positionInvestment.id), loadPositionHistory(selectedWalletId)]);
         } catch (error) {
             setPositionErrors(normalizeErrors(error));
         }
@@ -252,5 +256,5 @@ export default function useInvestments() {
         try { await FinancialService.deleteInvestment(investment.id); setInvestments((current) => current.filter((item) => item.id !== investment.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 
-    return { wallets, investments: filteredInvestments, allInvestments: investments, investmentFilters, updateInvestmentFilter, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters, yieldInvestment, yields, yieldsLoading, openYields, closeYields, positionsOpen, setPositionsOpen, filtersOpen, setFiltersOpen, incomeOpen, setIncomeOpen, manualIncomeOpen, setManualIncomeOpen, manualIncomeForm, manualIncomeErrors, manualIncomeSubmitting, openIncomeModal, submitIncome, positionInvestment, positions, positionHistory, positionModalOpen, positionHistoryOpen, positionForm, positionErrors, positionSubmitting, openPositionModal, changePositionInvestment, submitPosition, removePosition, setPositionModalOpen, setPositionHistoryOpen };
+    return { wallets, investments: filteredInvestments, allInvestments: investments, investmentFilters, updateInvestmentFilter, selectedWalletId, selectWallet, loading, modalOpen, editingInvestment, errors, submitting, form, openModal, closeModal, submit, remove, lookupQuote, quoteLoading, quoteMessage, income, incomeFilters, incomeLoading, updateIncomeFilters, applyIncomeFilters, yieldInvestment, yields, yieldsLoading, openYields, closeYields, positionsOpen, setPositionsOpen, incomeOpen, setIncomeOpen, manualIncomeOpen, setManualIncomeOpen, manualIncomeForm, manualIncomeErrors, manualIncomeSubmitting, openIncomeModal, submitIncome, positionInvestment, editingPosition, positions, positionHistory, positionModalOpen, positionForm, positionErrors, positionSubmitting, openPositionModal, changePositionInvestment, submitPosition, removePosition, setPositionModalOpen };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import Account from '@/Models/Account';
 import Transaction from '@/Models/Transaction';
@@ -35,6 +35,8 @@ export default function useWallets() {
     const [accountTransactionsError, setAccountTransactionsError] = useState('');
     const [accountTransactionsFilters, setAccountTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true });
     const [selectedAccountForTransactions, setSelectedAccountForTransactions] = useState(null);
+    const accountTransactionsRequestId = useRef(0);
+    const accountTransactionsAbort = useRef(null);
     const form = useForm({ ...Wallet });
     const accountForm = useForm({ ...Account });
     const transactionForm = useForm({ ...Transaction });
@@ -243,6 +245,10 @@ export default function useWallets() {
 
     const loadAccountTransactions = async (account, filters = accountTransactionsFilters) => {
         if (!account) return;
+        const requestId = ++accountTransactionsRequestId.current;
+        accountTransactionsAbort.current?.abort();
+        const controller = new AbortController();
+        accountTransactionsAbort.current = controller;
         setAccountTransactionsLoading(true);
         setAccountTransactionsError('');
 
@@ -258,13 +264,15 @@ export default function useWallets() {
                 per_page: 20,
                 sort_by: 'due_date',
                 sort_direction: 'desc',
-            });
-            setAccountTransactions((response.data ?? []).map((transaction) => ({ ...transaction, canManage: canManageTransaction(transaction) })));
-            setAccountTransactionsMeta({ ...(response.meta ?? {}), total_amount: Number(response.total_amount ?? 0) });
+            }, { signal: controller.signal });
+            if (requestId === accountTransactionsRequestId.current) {
+                setAccountTransactions((response.data ?? []).map((transaction) => ({ ...transaction, canManage: canManageTransaction(transaction) })));
+                setAccountTransactionsMeta({ ...(response.meta ?? {}), total_amount: Number(response.total_amount ?? 0) });
+            }
         } catch (error) {
-            setAccountTransactionsError(error.message);
+            if (requestId === accountTransactionsRequestId.current) setAccountTransactionsError(error.message);
         } finally {
-            setAccountTransactionsLoading(false);
+            if (requestId === accountTransactionsRequestId.current) setAccountTransactionsLoading(false);
         }
     };
 

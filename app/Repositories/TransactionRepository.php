@@ -75,14 +75,16 @@ class TransactionRepository implements TransactionRepositoryInterface
 
     public function totalAmountForWallet(TransactionListFilterDTO $filters): int
     {
-        return (int) $this->queryForWallet($filters)->get()->sum(fn (Transaction $transaction): int => $transaction->effect === TransactionEffect::CREDIT ? $transaction->amount : -$transaction->amount);
+        return (int) $this->queryForWallet($filters, withDetails: false)
+            ->toBase()
+            ->selectRaw('COALESCE(SUM(CASE WHEN effect = ? THEN amount ELSE -amount END), 0) AS total_amount', [TransactionEffect::CREDIT->value])
+            ->value('total_amount');
     }
 
-    private function queryForWallet(TransactionListFilterDTO $filters): Builder
+    private function queryForWallet(TransactionListFilterDTO $filters, bool $withDetails = true): Builder
     {
         $query = Transaction::query()
-            ->withExists('reversals')
-            ->with('externalTransactions')
+            ->when($withDetails, fn (Builder $query): Builder => $query->withExists('reversals')->with(['externalTransactions:id,transaction_id,source']))
             ->where('wallet_id', $filters->walletId)
             ->when(! $filters->includeThirdParty, fn ($query) => $query->where('is_third_party', false));
         if ($filters->accountId !== null) {
@@ -106,16 +108,16 @@ class TransactionRepository implements TransactionRepositoryInterface
         }
 
         if ($filters->transactionDateFrom !== null) {
-            $query->whereDate('transaction_date', '>=', $filters->transactionDateFrom);
+            $query->where('transaction_date', '>=', $filters->transactionDateFrom);
         }
         if ($filters->transactionDateTo !== null) {
-            $query->whereDate('transaction_date', '<=', $filters->transactionDateTo);
+            $query->where('transaction_date', '<=', $filters->transactionDateTo);
         }
         if ($filters->competenceDateFrom !== null) {
-            $query->whereDate('competence_date', '>=', $filters->competenceDateFrom);
+            $query->where('competence_date', '>=', $filters->competenceDateFrom);
         }
         if ($filters->competenceDateTo !== null) {
-            $query->whereDate('competence_date', '<=', $filters->competenceDateTo);
+            $query->where('competence_date', '<=', $filters->competenceDateTo);
         }
 
         return $query;
