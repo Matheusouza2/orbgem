@@ -8,13 +8,34 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('investment_positions', function (Blueprint $table): void {
-            $table->string('entry_type', 20)->default('SNAPSHOT')->after('position_date');
-            // Keep an index that starts with investment_id for the foreign key
-            // before removing the old unique index that currently supports it.
-            $table->unique(['investment_id', 'position_date', 'entry_type'], 'investment_positions_investment_date_type_unique');
-            $table->dropUnique('investment_positions_investment_id_position_date_unique');
-        });
+        $tableName = 'investment_positions';
+
+        if (! Schema::hasColumn($tableName, 'entry_type')) {
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->string('entry_type', 20)->default('SNAPSHOT')->after('position_date');
+            });
+        }
+
+        $indexes = collect(Schema::getIndexes($tableName));
+        $hasEntryTypeUnique = $indexes->contains(
+            fn (array $index): bool => $index['columns'] === ['investment_id', 'position_date', 'entry_type']
+        );
+
+        if (! $hasEntryTypeUnique) {
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->unique(['investment_id', 'position_date', 'entry_type'], 'investment_positions_investment_date_type_unique');
+            });
+        }
+
+        $hasOldUnique = $indexes->contains(
+            fn (array $index): bool => $index['name'] === 'investment_positions_investment_id_position_date_unique'
+        );
+
+        if ($hasOldUnique) {
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->dropUnique('investment_positions_investment_id_position_date_unique');
+            });
+        }
     }
 
     public function down(): void
