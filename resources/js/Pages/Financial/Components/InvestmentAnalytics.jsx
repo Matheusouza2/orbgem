@@ -1,5 +1,6 @@
 import { useId } from 'react';
-import { Activity, BarChart3, CircleDollarSign, PieChart } from 'lucide-react';
+import { Button } from 'flowbite-react';
+import { Activity, BarChart3, CircleDollarSign, PieChart, TrendingUp } from 'lucide-react';
 
 const colors = ['#123B8F', '#F4B321', '#4F75C8', '#79A7A3', '#C98A00', '#667085'];
 const money = (value) => (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -8,8 +9,8 @@ const monthKey = (value) => { const date = new Date(`${String(value).slice(0, 10
 const monthLabel = (key) => { const [year, month] = key.split('-').map(Number); return new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(new Date(year, month - 1, 15)).replace('.', ''); };
 const lastMonths = (count = 6) => { const now = new Date(); return Array.from({ length: count }, (_, index) => { const date = new Date(now.getFullYear(), now.getMonth() - count + index + 1, 1); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; }); };
 
-function Card({ title, subtitle, icon: Icon, children }) {
-    return <article className="investment-dashboard__card investment-chart-card"><div className="investment-dashboard__card-title"><span className="investment-dashboard__icon"><Icon aria-hidden="true" /></span><div><p className="ledger-eyebrow">Carteira</p><h2>{title}</h2><p className="investment-chart-card__subtitle">{subtitle}</p></div></div>{children}</article>;
+function Card({ title, subtitle, icon: Icon, action, children }) {
+    return <article className="investment-dashboard__card investment-chart-card"><div className="flex flex-wrap items-start justify-between gap-3"><div className="investment-dashboard__card-title"><span className="investment-dashboard__icon"><Icon aria-hidden="true" /></span><div><p className="ledger-eyebrow">Carteira</p><h2>{title}</h2><p className="investment-chart-card__subtitle">{subtitle}</p></div></div>{action}</div>{children}</article>;
 }
 
 function Empty({ children }) { return <p className="investment-dashboard__empty investment-chart-empty">{children}</p>; }
@@ -58,6 +59,8 @@ function TickerDonut({ investments }) {
     return <div className="investment-donut"><div className="investment-donut__visual"><svg viewBox="0 0 180 180" role="img" aria-label={`Composição por ticker. Total ${money(total)}.`}>{rows.map((row, index) => { const fraction = row.value / total; const next = angle + fraction * Math.PI * 2; const path = arcPath(90, 90, 76, angle, next); angle = next; return fraction >= .999999 ? <circle key={row.label} cx="90" cy="90" r="76" fill={colors[index % colors.length]}><title>{`${row.label}: ${money(row.value)} (100%)`}</title></circle> : <path key={row.label} d={path} fill={colors[index % colors.length]} stroke="white" strokeWidth="2"><title>{`${row.label}: ${money(row.value)} (${(fraction * 100).toFixed(1).replace('.', ',')}%)`}</title></path>; })}<circle cx="90" cy="90" r="48" fill="white" /><text x="90" y="84" textAnchor="middle" className="investment-donut__center-label">VALOR ATUAL</text><text x="90" y="104" textAnchor="middle" className="investment-donut__center-value">{compactMoney(total)}</text></svg></div><ul className="investment-donut__legend">{rows.map((row, index) => <li key={row.label}><i style={{ background: colors[index % colors.length] }} /><span title={row.label}>{row.label}</span><strong>{((row.value / total) * 100).toFixed(0)}%</strong></li>)}</ul></div>;
 }
 
-export default function InvestmentAnalytics({ investments, history, income }) {
-    return <div className="investment-dashboard__charts investment-analytics"><Card title="Evolução patrimonial" subtitle="Valor da carteira ao longo do tempo" icon={Activity}><PortfolioLine history={history} /></Card><Card title="Por ticker / código" subtitle="Distribuição do valor atual" icon={PieChart}><TickerDonut investments={investments} /></Card><Card title="Aportes por mês" subtitle="Capital adicionado à carteira" icon={BarChart3}><MonthlyBars records={history} dateKey="position_date" valueKey="contribution_amount" title="aportes" /></Card><Card title="Rendimentos por mês" subtitle="Proventos e dividendos recebidos" icon={CircleDollarSign}><MonthlyBars records={income} dateKey="transaction_date" valueKey="amount" title="rendimentos" /></Card></div>;
+export default function InvestmentAnalytics({ investments, history, income, onOpenTickerIncome }) {
+    const tickerIncomeAction = <Button color="light" size="xs" onClick={onOpenTickerIncome} disabled={investments.length === 0}><TrendingUp className="mr-2 h-4 w-4" aria-hidden="true" />Ver por ticker</Button>;
+
+    return <div className="investment-dashboard__charts investment-analytics"><Card title="Evolução patrimonial" subtitle="Valor da carteira ao longo do tempo" icon={Activity}><PortfolioLine history={history} /></Card><Card title="Por ticker / código" subtitle="Distribuição do valor atual" icon={PieChart}><TickerDonut investments={investments} /></Card><Card title="Aportes por mês" subtitle="Capital adicionado à carteira" icon={BarChart3}><MonthlyBars records={history} dateKey="position_date" valueKey="contribution_amount" title="aportes" /></Card><Card title="Rendimentos por mês" subtitle="Proventos e dividendos recebidos" icon={CircleDollarSign} action={tickerIncomeAction}><MonthlyBars records={income} dateKey="transaction_date" valueKey="amount" title="rendimentos" /></Card></div>;
 }

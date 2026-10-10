@@ -9,6 +9,7 @@ use App\Models\CreditCard;
 use App\Models\CreditCardInvoice;
 use App\Models\ExternalAccount;
 use App\Models\ExternalTransaction;
+use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
