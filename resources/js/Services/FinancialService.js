@@ -100,11 +100,14 @@ const FinancialService = {
     deleteOpenFinanceItem: async (itemId, options = {}) => request(`/api/v1/open-finance/items/${itemId}`, { method: 'DELETE', ...options }),
     syncOpenFinanceConnection: async (connectionId, payload, options = {}) => request(`/api/v1/open-finance/connections/${connectionId}/sync`, { method: 'POST', body: JSON.stringify(payload), ...options }),
     listTransactions: async (walletId, accountId, month, options = {}) => {
+        const { status, includeThirdParty = true, ...requestOptions } = options;
         const params = new URLSearchParams({ wallet_id: walletId, month });
 
         if (accountId) params.set('account_id', accountId);
+        if (status) params.set('status', status);
+        params.set('include_third_party', includeThirdParty ? '1' : '0');
 
-        return (await request(`/api/v1/transactions?${params}`, options)).data;
+        return request(`/api/v1/transactions?${params}`, requestOptions);
     },
     listAccountTransactions: async (accountId, params = {}, options = {}) => request(`/api/v1/transactions?${new URLSearchParams({ account_id: accountId, ...params })}`, options),
     getSummary: async (walletId, month, options = {}) => {

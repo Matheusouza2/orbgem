@@ -101,6 +101,8 @@ class TransactionRepository implements TransactionRepositoryInterface
         }
         if ($filters->status !== null) {
             $query->where('status', $filters->status);
+        } elseif ($filters->activeStatusesOnly) {
+            $query->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED]);
         }
         if ($filters->month !== null) {
             [$start, $end] = $this->monthBounds($filters->month);

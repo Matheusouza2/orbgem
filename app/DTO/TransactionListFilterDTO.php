@@ -24,6 +24,7 @@ final readonly class TransactionListFilterDTO
         public ?string $competenceDateFrom,
         public ?string $competenceDateTo,
         public bool $includeThirdParty = true,
+        public bool $activeStatusesOnly = false,
     ) {}
 
     /** @param array<string, mixed> $attributes */
@@ -35,7 +36,7 @@ final readonly class TransactionListFilterDTO
             merchantId: $attributes['merchant_id'] ?? null,
             categoryId: isset($attributes['category_id']) ? (int) $attributes['category_id'] : null,
             type: isset($attributes['type']) ? TransactionType::from($attributes['type']) : null,
-            status: isset($attributes['status']) ? TransactionStatus::from($attributes['status']) : null,
+            status: isset($attributes['status']) && $attributes['status'] !== 'ACTIVE' ? TransactionStatus::from($attributes['status']) : null,
             month: $attributes['month'] ?? null,
             page: $attributes['page'] ?? 1,
             perPage: $attributes['per_page'] ?? 25,
@@ -46,6 +47,7 @@ final readonly class TransactionListFilterDTO
             competenceDateFrom: $attributes['competence_date_from'] ?? null,
             competenceDateTo: $attributes['competence_date_to'] ?? null,
             includeThirdParty: (bool) ($attributes['include_third_party'] ?? true),
+            activeStatusesOnly: ($attributes['status'] ?? null) === 'ACTIVE',
         );
     }
 }

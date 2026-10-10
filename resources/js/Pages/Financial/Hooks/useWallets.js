@@ -33,7 +33,7 @@ export default function useWallets() {
     const [accountTransactionsMeta, setAccountTransactionsMeta] = useState(null);
     const [accountTransactionsLoading, setAccountTransactionsLoading] = useState(false);
     const [accountTransactionsError, setAccountTransactionsError] = useState('');
-    const [accountTransactionsFilters, setAccountTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true });
+    const [accountTransactionsFilters, setAccountTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: 'ACTIVE', type: '', category_id: '', page: 1, include_third_party: true });
     const [selectedAccountForTransactions, setSelectedAccountForTransactions] = useState(null);
     const accountTransactionsRequestId = useRef(0);
     const accountTransactionsAbort = useRef(null);
@@ -277,7 +277,7 @@ export default function useWallets() {
     };
 
     const openAccountTransactions = (account) => {
-        const filters = { month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true };
+        const filters = { month: new Date().toISOString().slice(0, 7), status: 'ACTIVE', type: '', category_id: '', page: 1, include_third_party: true };
         setSelectedAccountForTransactions(account);
         setAccountTransactionsFilters(filters);
         loadAccountTransactions(account, filters);

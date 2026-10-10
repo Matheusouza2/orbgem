@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Transaction;
 
-use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,7 +25,7 @@ class ListTransactionRequest extends FormRequest
             'merchant_id' => ['nullable', 'integer'],
             'category_id' => ['nullable', 'integer'],
             'type' => ['nullable', Rule::enum(TransactionType::class)],
-            'status' => ['nullable', Rule::enum(TransactionStatus::class)],
+            'status' => ['nullable', 'string', 'in:POSTED,PROJECTED,CANCELLED,ACTIVE'],
             'month' => ['nullable', 'date_format:Y-m'],
             'transaction_date_from' => ['nullable', 'date'],
             'transaction_date_to' => ['nullable', 'date', 'after_or_equal:transaction_date_from'],

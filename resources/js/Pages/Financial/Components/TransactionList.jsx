@@ -9,9 +9,9 @@ const transactionType = { INCOME: 'Entrada', EXPENSE: 'Saída', TRANSFER: 'Trans
 const MAX_DESCRIPTION_LENGTH = 60;
 const truncateDescription = (description) => description.length > MAX_DESCRIPTION_LENGTH ? `${description.slice(0, MAX_DESCRIPTION_LENGTH - 3)}...` : description;
 
-export default function TransactionList({ transactions, categories = [], loading, onRequestReversal, onRequestEdit, onRequestDelete, onEffectivate, title = 'Todos os lançamentos' }) {
+export default function TransactionList({ transactions, totalAmount = 0, categories = [], loading, onRequestReversal, onRequestEdit, onRequestDelete, onEffectivate, title = 'Todos os lançamentos' }) {
     return <section className="ledger-panel transactions-list" aria-labelledby="transactions-title">
-        <div className="mb-6 flex items-end justify-between gap-4"><div><p className="ledger-eyebrow">Linha do tempo</p><h2 id="transactions-title" className="ledger-title">{title}</h2></div><span className="transactions-count">{transactions.length.toString().padStart(2, '0')} registros</span></div>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="ledger-eyebrow">Linha do tempo</p><h2 id="transactions-title" className="ledger-title">{title}</h2></div><div className="flex flex-wrap items-center gap-3"><span className="text-sm text-orbital-text-secondary">Total filtrado <strong className="ml-1 text-orbital-primary-dark">{money(totalAmount)}</strong></span><span className="transactions-count">{transactions.length.toString().padStart(2, '0')} registros</span></div></div>
         {loading ? <p className="ledger-state" aria-live="polite">Atualizando lançamentos…</p> : transactions.length === 0 ? <p className="ledger-state">Nenhuma movimentação neste período. Registre uma entrada ou saída para começar.</p> : <ul className="transactions-list__items">{transactions.map((transaction) => {
             const credit = transaction.effect === 'CREDIT';
             const transfer = transaction.type === 'TRANSFER';

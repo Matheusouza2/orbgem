@@ -17,6 +17,7 @@ final readonly class CreditCardTransactionListDTO
         public bool $includeThirdParty = true,
         public ?TransactionType $type = null,
         public ?int $categoryId = null,
+        public bool $activeStatusesOnly = false,
     ) {}
 
     /** @param array<string, mixed> $attributes */
@@ -26,12 +27,13 @@ final readonly class CreditCardTransactionListDTO
             walletId: (int) $attributes['wallet_id'],
             creditCardId: $creditCardId,
             month: $attributes['month'] ?? null,
-            status: isset($attributes['status']) ? TransactionStatus::from($attributes['status']) : null,
+            status: isset($attributes['status']) && $attributes['status'] !== 'ACTIVE' ? TransactionStatus::from($attributes['status']) : null,
             type: isset($attributes['type']) ? TransactionType::from($attributes['type']) : null,
             categoryId: isset($attributes['category_id']) ? (int) $attributes['category_id'] : null,
             page: (int) ($attributes['page'] ?? 1),
             perPage: (int) ($attributes['per_page'] ?? 25),
             includeThirdParty: (bool) ($attributes['include_third_party'] ?? true),
+            activeStatusesOnly: ($attributes['status'] ?? null) === 'ACTIVE',
         );
     }
 }

@@ -6,7 +6,7 @@ import Inputs from '@/Components/Inputs';
 import { canEditCreditCardTransaction, canEffectivateTransaction } from '../Hooks/transactionActions';
 
 const money = (cents) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(cents || 0) / 100);
-const statusOptions = [{ value: '', label: 'Todos os status' }, { value: 'POSTED', label: 'Realizadas' }, { value: 'PROJECTED', label: 'Previstas' }, { value: 'CANCELLED', label: 'Canceladas' }];
+const statusOptions = [{ value: 'ACTIVE', label: 'Todas' }, { value: 'PROJECTED', label: 'Previstas' }, { value: 'POSTED', label: 'Efetivadas' }];
 const typeOptions = [{ value: '', label: 'Todos os tipos' }, { value: 'EXPENSE', label: 'Despesas' }, { value: 'INCOME', label: 'Receitas' }];
 
 export default function CreditCardTransactionsModal({ card, transactions, meta, loading, error, filters, categories = [], onClose, onFilter, onPage, onEditInstallment, onEditPurchase, onDeleteInstallment, onDeletePurchase, onEffectivate }) {

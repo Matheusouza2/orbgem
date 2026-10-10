@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\DTO\CreditCardDTO;
 use App\DTO\CreditCardTransactionListDTO;
 use App\Enums\TransactionEffect;
+use App\Enums\TransactionStatus;
 use App\Models\CreditCard;
 use App\Models\CreditCardInvoice;
 use App\Models\ExternalAccount;
@@ -104,6 +105,7 @@ class CreditCardRepository implements CreditCardRepositoryInterface
             })
             ->whereDoesntHave('invoicePayments')
             ->when(! $dto->includeThirdParty, fn ($query) => $query->where('is_third_party', false))
+            ->when($dto->activeStatusesOnly, fn ($query) => $query->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED]))
             ->when($dto->status !== null, fn ($query) => $query->where('status', $dto->status))
             ->when($dto->type !== null, fn ($query) => $query->where('type', $dto->type))
             ->when($dto->categoryId !== null, fn ($query) => $query->where('category_id', $dto->categoryId))

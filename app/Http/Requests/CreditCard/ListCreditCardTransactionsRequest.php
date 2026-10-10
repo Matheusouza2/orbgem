@@ -18,7 +18,7 @@ class ListCreditCardTransactionsRequest extends FormRequest
         return [
             'wallet_id' => ['required', 'integer', 'exists:wallets,id'],
             'month' => ['nullable', 'date_format:Y-m'],
-            'status' => ['nullable', 'string', 'in:POSTED,PROJECTED,CANCELLED'],
+            'status' => ['nullable', 'string', 'in:POSTED,PROJECTED,CANCELLED,ACTIVE'],
             'type' => ['nullable', Rule::enum(TransactionType::class)],
             'category_id' => ['nullable', 'integer'],
             'page' => ['nullable', 'integer', 'min:1'],

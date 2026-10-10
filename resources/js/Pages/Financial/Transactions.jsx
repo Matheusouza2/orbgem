@@ -10,12 +10,24 @@ import TransactionModal from './Components/TransactionModal';
 import TransactionList from './Components/TransactionList';
 import useDashboard from './Hooks/useDashboard';
 
+const statusOptions = [{ value: 'ACTIVE', label: 'Todas' }, { value: 'PROJECTED', label: 'Previstas' }, { value: 'POSTED', label: 'Efetivadas' }];
+
 export default function Transactions() {
     const transactions = useDashboard();
     const [transactionModalOpen, setTransactionModalOpen] = useState(false);
     const walletOptions = transactions.wallets.map((wallet) => ({ value: String(wallet.id), label: wallet.name }));
     const accountOptions = transactions.accounts.map((account) => ({ value: String(account.id), label: account.name }));
     const money = (cents = 0) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
+    const postedIncome = Number(transactions.summary.actual_income || 0);
+    const postedExpenses = Number(transactions.summary.actual_expenses || 0);
+    const projectedIncome = Number(transactions.summary.forecast_income || 0) - postedIncome;
+    const projectedExpenses = Number(transactions.summary.forecast_expenses || 0) - postedExpenses;
+    const filteredTotals = transactions.transactionStatus === 'POSTED'
+        ? { income: postedIncome, expenses: postedExpenses, label: 'efetivadas' }
+        : transactions.transactionStatus === 'PROJECTED'
+            ? { income: projectedIncome, expenses: projectedExpenses, label: 'previstas' }
+            : { income: postedIncome + projectedIncome, expenses: postedExpenses + projectedExpenses, label: 'previstas e efetivadas' };
+    const filteredBalance = filteredTotals.income - filteredTotals.expenses;
 
     return <AppLayout>
         <div className="transactions-page">
@@ -31,6 +43,7 @@ export default function Transactions() {
                     <Inputs.Select name="wallet_id" label="Carteira" value={walletOptions.find((wallet) => wallet.value === String(transactions.selectedWalletId)) ?? null} onChange={(option) => transactions.selectWallet(option?.value ?? '')} options={walletOptions} isClearable={false} isDisabled={transactions.loading} className="min-w-52" />
                     <Inputs.Select name="account_id" label="Conta" value={accountOptions.find((account) => account.value === String(transactions.selectedAccountId)) ?? null} onChange={(option) => transactions.selectAccount(option?.value ?? '')} options={accountOptions} isClearable className="min-w-52" isDisabled={!transactions.selectedWalletId || transactions.loading} />
                     <Inputs.Flatpickr name="month" label="Competência" value={transactions.month} onChange={(_, dateString) => dateString && transactions.setMonth(dateString)} monthYearOnly className="min-w-40" />
+                    <Inputs.Select name="status" label="Status" value={statusOptions.find((option) => option.value === transactions.transactionStatus)} onChange={(option) => transactions.setTransactionStatus(option?.value ?? 'ACTIVE')} options={statusOptions} isClearable={false} isDisabled={transactions.loading} className="min-w-40" />
                     <Inputs.Checkbox name="include_third_party" label="Incluir despesas de terceiros" value={transactions.includeThirdParty} onChange={transactions.setIncludeThirdParty} />
                 </Suspense>
                     <Button color="blue" onClick={() => setTransactionModalOpen(true)} disabled={!transactions.selectedWalletId}><Plus className="mr-2 h-4 w-4" aria-hidden="true" />Nova transação</Button>
@@ -40,9 +53,9 @@ export default function Transactions() {
             {transactions.error && <div className="ledger-error" role="alert">{transactions.error}</div>}
             {!transactions.selectedWalletId && !transactions.loading && <div className="ledger-panel mb-5" role="status">Você ainda não possui uma carteira disponível.</div>}
             {transactions.selectedWalletId && <>
-                <div className="transactions-stats"><div><span>Entradas realizadas</span><strong className="text-emerald-700">{money(transactions.summary.actual_income)}</strong><small>neste mês</small></div><div><span>Despesas realizadas</span><strong className="text-rose-700">{money(transactions.summary.actual_expenses)}</strong><small>neste mês</small></div><div><span>Despesas previstas</span><strong className="text-orbital-primary">{money(transactions.summary.forecast_expenses)}</strong><small>planejado</small></div></div>
+                <div className="transactions-stats"><div><span>Entradas {filteredTotals.label}</span><strong className="text-emerald-700">{money(filteredTotals.income)}</strong><small>{transactions.month}</small></div><div><span>Despesas {filteredTotals.label}</span><strong className="text-rose-700">{money(filteredTotals.expenses)}</strong><small>{transactions.month}</small></div><div><span>Saldo {filteredTotals.label}</span><strong className={filteredBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'}>{money(filteredBalance)}</strong><small>entradas menos despesas</small></div></div>
                 <div className="grid grid-cols-1 items-start gap-5">
-                    <TransactionList transactions={transactions.transactions} categories={transactions.categories} loading={transactions.loading} onRequestReversal={transactions.requestReversal} onRequestEdit={transactions.requestEdit} onRequestDelete={transactions.requestDelete} onEffectivate={transactions.effectivateTransaction} />
+                    <TransactionList transactions={transactions.transactions} totalAmount={transactions.transactionsTotal} categories={transactions.categories} loading={transactions.loading} onRequestReversal={transactions.requestReversal} onRequestEdit={transactions.requestEdit} onRequestDelete={transactions.requestDelete} onEffectivate={transactions.effectivateTransaction} />
                 </div>
             </>}
         </div>

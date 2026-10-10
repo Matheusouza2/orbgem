@@ -25,7 +25,7 @@ export default function useCreditCards() {
     const [transactionsError, setTransactionsError] = useState('');
     const transactionsRequestId = useRef(0);
     const transactionsAbort = useRef(null);
-    const [transactionsFilters, setTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: '', type: '', category_id: '', page: 1, include_third_party: true });
+    const [transactionsFilters, setTransactionsFilters] = useState({ month: new Date().toISOString().slice(0, 7), status: 'ACTIVE', type: '', category_id: '', page: 1, include_third_party: true });
     const [transactionModalOpen, setTransactionModalOpen] = useState(false);
     const [transactionCategories, setTransactionCategories] = useState([]);
     const [transactionMerchants, setTransactionMerchants] = useState([]);
@@ -205,7 +205,7 @@ export default function useCreditCards() {
     };
 
     const openTransactions = (card, month = currentMonth()) => {
-        const filters = { month: month || currentMonth(), status: '', type: '', category_id: '', page: 1, include_third_party: true };
+        const filters = { month: month || currentMonth(), status: 'ACTIVE', type: '', category_id: '', page: 1, include_third_party: true };
         setTransactionsCard({ ...card, onEditInstallment: requestEditInstallment, onEditPurchase: requestEditPurchase, onDeleteInstallment: requestDeleteInstallment, onDeletePurchase: requestDeletePurchase });
         setTransactionsFilters(filters);
         loadCardTransactions(card, filters);

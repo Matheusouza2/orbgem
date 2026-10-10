@@ -33,12 +33,14 @@ export default function useDashboard() {
     const [merchants, setMerchants] = useState([]);
     const [categories, setCategories] = useState([]);
     const [transactions, setTransactions] = useState([]);
+    const [transactionsTotal, setTransactionsTotal] = useState(0);
     const [summary, setSummary] = useState(emptySummary);
     const [previousSummary, setPreviousSummary] = useState(emptySummary);
     const [nextSummary, setNextSummary] = useState(emptySummary);
     const [selectedWalletId, setSelectedWalletId] = useState('');
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [month, setMonth] = useState(currentMonth);
+    const [transactionStatus, setTransactionStatus] = useState('ACTIVE');
     const [includeThirdParty, setIncludeThirdParty] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -84,6 +86,7 @@ export default function useDashboard() {
             setMerchants([]);
             setCategories([]);
             setTransactions([]);
+            setTransactionsTotal(0);
             setSummary(emptySummary);
             setPreviousSummary(emptySummary);
             setNextSummary(emptySummary);
@@ -106,7 +109,7 @@ export default function useDashboard() {
             FinancialService.listCreditCards(selectedWalletId, { signal: controller.signal, month, includeThirdParty }),
             FinancialService.listMerchants(selectedWalletId, { signal: controller.signal }),
             FinancialService.listCategories(selectedWalletId, { signal: controller.signal }),
-            FinancialService.listTransactions(selectedWalletId, selectedAccountId, month, { signal: controller.signal }),
+            FinancialService.listTransactions(selectedWalletId, selectedAccountId, month, { signal: controller.signal, status: transactionStatus, includeThirdParty }),
             FinancialService.getSummary(selectedWalletId, month, { signal: controller.signal, includeThirdParty }),
             FinancialService.getSummary(selectedWalletId, shiftMonth(month, -1), { signal: controller.signal, includeThirdParty }),
             FinancialService.getSummary(selectedWalletId, shiftMonth(month, 1), { signal: controller.signal, includeThirdParty }),
@@ -118,11 +121,12 @@ export default function useDashboard() {
                 setCreditCards(availableCreditCards);
                 setMerchants(availableMerchants);
                 setCategories(availableCategories);
-                setTransactions(availableTransactions.map((transaction) => ({
+                setTransactions((availableTransactions.data ?? []).map((transaction) => ({
                     ...transaction,
                     canReverse: canReverseTransaction(transaction),
                     canManage: canManageTransaction(transaction),
                 })));
+                setTransactionsTotal(Number(availableTransactions.total_amount ?? 0));
                 setSummary(availableSummary);
                 setPreviousSummary(availablePreviousSummary);
                 setNextSummary(availableNextSummary);
@@ -137,7 +141,7 @@ export default function useDashboard() {
             });
 
         return () => controller.abort();
-    }, [selectedWalletId, selectedAccountId, month, includeThirdParty]);
+    }, [selectedWalletId, selectedAccountId, month, includeThirdParty, transactionStatus]);
 
     const reload = async () => {
         if (!selectedWalletId) return;
@@ -147,7 +151,7 @@ export default function useDashboard() {
             FinancialService.listCreditCards(selectedWalletId, { month, includeThirdParty }),
             FinancialService.listMerchants(selectedWalletId),
             FinancialService.listCategories(selectedWalletId),
-            FinancialService.listTransactions(selectedWalletId, selectedAccountId, month),
+            FinancialService.listTransactions(selectedWalletId, selectedAccountId, month, { status: transactionStatus, includeThirdParty }),
             FinancialService.getSummary(selectedWalletId, month, { includeThirdParty }),
             FinancialService.getSummary(selectedWalletId, shiftMonth(month, -1), { includeThirdParty }),
             FinancialService.getSummary(selectedWalletId, shiftMonth(month, 1), { includeThirdParty }),
@@ -157,11 +161,12 @@ export default function useDashboard() {
         setCreditCards(availableCreditCards);
         setMerchants(availableMerchants);
         setCategories(availableCategories);
-        setTransactions(availableTransactions.map((transaction) => ({
+        setTransactions((availableTransactions.data ?? []).map((transaction) => ({
             ...transaction,
             canReverse: canReverseTransaction(transaction),
             canManage: canManageTransaction(transaction),
         })));
+        setTransactionsTotal(Number(availableTransactions.total_amount ?? 0));
         setSummary(availableSummary);
         setPreviousSummary(availablePreviousSummary);
         setNextSummary(availableNextSummary);
@@ -322,12 +327,15 @@ export default function useDashboard() {
         merchants,
         categories,
         transactions,
+        transactionsTotal,
         summary,
         previousSummary,
         nextSummary,
         selectedWalletId,
         selectedAccountId,
         month,
+        transactionStatus,
+        setTransactionStatus,
         includeThirdParty,
         setIncludeThirdParty,
         loading,
