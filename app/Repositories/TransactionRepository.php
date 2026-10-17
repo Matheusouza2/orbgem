@@ -81,10 +81,10 @@ class TransactionRepository implements TransactionRepositoryInterface
     /** @return array{movements: LengthAwarePaginator, total_amount: int} */
     public function accountMovements(Account $account, TransactionListFilterDTO $filters): array
     {
-        $normalQuery = $this->queryForWallet($filters)
+        $normalQuery = $this->queryForWallet($filters, monthByDueDate: true)
             ->whereNull('credit_card_invoice_id');
         $normalCount = (clone $normalQuery)->count();
-        $normalAmount = (int) (clone $this->queryForWallet($filters, withDetails: false))
+        $normalAmount = (int) (clone $this->queryForWallet($filters, withDetails: false, monthByDueDate: true))
             ->whereNull('credit_card_invoice_id')
             ->toBase()
             ->selectRaw('COALESCE(SUM(CASE WHEN effect = ? THEN amount ELSE -amount END), 0) AS total_amount', [TransactionEffect::CREDIT->value])
@@ -154,7 +154,10 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->whereNotNull('credit_card_invoice_id')
             ->whereHas('invoicePayments')
             ->where('status', TransactionStatus::POSTED)
-            ->when($filters->month !== null, fn (Builder $query) => $query->where('competence_date', '>=', $this->monthBounds($filters->month)[0])->where('competence_date', '<', $this->monthBounds($filters->month)[1]))
+            ->when($filters->month !== null, function (Builder $query) use ($filters): void {
+                [$start, $end] = $this->monthBounds($filters->month);
+                $query->where('due_date', '>=', $start)->where('due_date', '<', $end);
+            })
             ->when($filters->status !== null, fn (Builder $query) => $query->where('status', $filters->status))
             ->when($filters->status === null && $filters->activeStatusesOnly, fn (Builder $query) => $query->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED]))
             ->when($filters->transactionDateFrom !== null, fn (Builder $query) => $query->where('transaction_date', '>=', $filters->transactionDateFrom))
@@ -215,7 +218,16 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->where('wallet_id', $account->wallet_id)
             ->whereHas('creditCard', fn (Builder $query) => $query->where('account_id', $account->id))
             ->where('status', '!=', 'PAID')
-            ->when($filters->month !== null, fn (Builder $query) => $query->where('reference_month', $filters->month))
+            ->when($filters->month !== null, function (Builder $query) use ($filters): void {
+                [$start, $end] = $this->monthBounds($filters->month);
+                $query->where(function (Builder $query) use ($filters, $start, $end): void {
+                    $query->where(function (Builder $query) use ($start, $end): void {
+                        $query->whereNotNull('due_date')->where('due_date', '>=', $start)->where('due_date', '<', $end);
+                    })->orWhere(function (Builder $query) use ($filters): void {
+                        $query->whereNull('due_date')->where('reference_month', $filters->month);
+                    });
+                });
+            })
             ->get();
 
         return $invoices->map(function (CreditCardInvoice $invoice) use ($filters): ?array {
@@ -319,7 +331,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->value('total_amount');
     }
 
-    private function queryForWallet(TransactionListFilterDTO $filters, bool $withDetails = true): Builder
+    private function queryForWallet(TransactionListFilterDTO $filters, bool $withDetails = true, bool $monthByDueDate = false): Builder
     {
         $query = Transaction::query()
             ->when($withDetails, fn (Builder $query): Builder => $query->withExists('reversals')->with(['externalTransactions:id,transaction_id,source']))
@@ -365,7 +377,17 @@ class TransactionRepository implements TransactionRepositoryInterface
         }
         if ($filters->month !== null) {
             [$start, $end] = $this->monthBounds($filters->month);
-            $query->where('competence_date', '>=', $start)->where('competence_date', '<', $end);
+            if ($monthByDueDate) {
+                $query->where(function (Builder $query) use ($start, $end): void {
+                    $query->where(function (Builder $query) use ($start, $end): void {
+                        $query->whereNotNull('due_date')->where('due_date', '>=', $start)->where('due_date', '<', $end);
+                    })->orWhere(function (Builder $query) use ($start, $end): void {
+                        $query->whereNull('due_date')->where('transaction_date', '>=', $start)->where('transaction_date', '<', $end);
+                    });
+                });
+            } else {
+                $query->where('competence_date', '>=', $start)->where('competence_date', '<', $end);
+            }
         }
 
         if ($filters->transactionDateFrom !== null) {
