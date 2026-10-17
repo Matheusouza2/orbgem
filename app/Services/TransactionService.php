@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTO\MonthlySummaryDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\TransactionListFilterDTO;
+use App\Models\Account;
 use App\Models\Transaction;
 use App\Repositories\TransactionRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -59,6 +60,12 @@ class TransactionService
     public function listForWallet(TransactionListFilterDTO $filters): LengthAwarePaginator
     {
         return $this->transactionRepository->forWallet($filters);
+    }
+
+    /** @return array{movements: LengthAwarePaginator, total_amount: int} */
+    public function accountMovements(Account $account, TransactionListFilterDTO $filters): array
+    {
+        return $this->transactionRepository->accountMovements($account, $filters);
     }
 
     public function totalAmountForWallet(TransactionListFilterDTO $filters): int

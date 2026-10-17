@@ -5,13 +5,16 @@ namespace App\Repositories;
 use App\DTO\MonthlySummaryDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\TransactionListFilterDTO;
-use App\Enums\TransactionEffect;
 use App\Enums\FinancialInstrumentType;
+use App\Enums\TransactionEffect;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
+use App\Models\Account;
+use App\Models\CreditCardInvoice;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -72,6 +75,211 @@ class TransactionRepository implements TransactionRepositoryInterface
     public function forWallet(TransactionListFilterDTO $filters): LengthAwarePaginator
     {
         return $this->queryForWallet($filters)->orderBy($filters->sortBy, $filters->sortDirection)->orderBy('id', $filters->sortDirection)->paginate($filters->perPage, ['*'], 'page', $filters->page);
+    }
+
+    /** @return array{movements: LengthAwarePaginator, total_amount: int} */
+    public function accountMovements(Account $account, TransactionListFilterDTO $filters): array
+    {
+        $normalQuery = $this->queryForWallet($filters)
+            ->whereNull('credit_card_invoice_id');
+        $normalCount = (clone $normalQuery)->count();
+        $normalAmount = (int) (clone $this->queryForWallet($filters, withDetails: false))
+            ->whereNull('credit_card_invoice_id')
+            ->toBase()
+            ->selectRaw('COALESCE(SUM(CASE WHEN effect = ? THEN amount ELSE -amount END), 0) AS total_amount', [TransactionEffect::CREDIT->value])
+            ->value('total_amount');
+
+        $offset = ($filters->page - 1) * $filters->perPage;
+        $candidateLimit = $offset + $filters->perPage;
+        $normalRows = (clone $normalQuery)
+            ->orderBy($filters->sortBy, $filters->sortDirection)
+            ->orderBy('id', $filters->sortDirection)
+            ->limit($candidateLimit)
+            ->get();
+
+        $summaries = $this->invoicePaymentSummaries($account, $filters)
+            ->concat($this->invoiceForecastSummaries($account, $filters));
+        $signedSummaryAmount = $summaries->sum(fn (array $row): int => $row['effect'] === TransactionEffect::CREDIT->value ? $row['amount'] : -$row['amount']);
+
+        $all = $normalRows->concat($summaries)->sort(function ($first, $second) use ($filters): int {
+            $field = $filters->sortBy;
+            $firstValue = $this->movementValue($first, $field);
+            $secondValue = $this->movementValue($second, $field);
+            $comparison = ($firstValue ?? '') <=> ($secondValue ?? '');
+            if ($comparison !== 0) {
+                return $filters->sortDirection === 'desc' ? -$comparison : $comparison;
+            }
+
+            $firstId = $this->movementValue($first, 'id');
+            $secondId = $this->movementValue($second, 'id');
+            $tieBreak = is_numeric($firstId) && is_numeric($secondId)
+                ? (int) $firstId <=> (int) $secondId
+                : (string) $firstId <=> (string) $secondId;
+
+            return $filters->sortDirection === 'desc' ? -$tieBreak : $tieBreak;
+        })->values();
+
+        $paginator = new Paginator(
+            $all->slice($offset, $filters->perPage)->values(),
+            $normalCount + $summaries->count(),
+            $filters->perPage,
+            $filters->page,
+            ['path' => Paginator::resolveCurrentPath(), 'pageName' => 'page'],
+        );
+
+        return ['movements' => $paginator, 'total_amount' => $normalAmount + $signedSummaryAmount];
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    private function invoicePaymentSummaries(Account $account, TransactionListFilterDTO $filters): Collection
+    {
+        if ($filters->type !== null && $filters->type !== TransactionType::EXPENSE) {
+            return collect();
+        }
+        if ($filters->categoryId !== null || $filters->merchantId !== null) {
+            return collect();
+        }
+
+        $payments = Transaction::query()
+            ->with(['creditCardInvoice.creditCard', 'invoicePayments'])
+            ->where('wallet_id', $account->wallet_id)
+            ->where('account_id', $account->id)
+            ->whereNotNull('credit_card_invoice_id')
+            ->whereHas('invoicePayments')
+            ->where('status', TransactionStatus::POSTED)
+            ->when($filters->month !== null, fn (Builder $query) => $query->where('competence_date', '>=', $this->monthBounds($filters->month)[0])->where('competence_date', '<', $this->monthBounds($filters->month)[1]))
+            ->when($filters->status !== null, fn (Builder $query) => $query->where('status', $filters->status))
+            ->when($filters->status === null && $filters->activeStatusesOnly, fn (Builder $query) => $query->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED]))
+            ->when($filters->transactionDateFrom !== null, fn (Builder $query) => $query->where('transaction_date', '>=', $filters->transactionDateFrom))
+            ->when($filters->transactionDateTo !== null, fn (Builder $query) => $query->where('transaction_date', '<=', $filters->transactionDateTo))
+            ->when($filters->competenceDateFrom !== null, fn (Builder $query) => $query->where('competence_date', '>=', $filters->competenceDateFrom))
+            ->when($filters->competenceDateTo !== null, fn (Builder $query) => $query->where('competence_date', '<=', $filters->competenceDateTo))
+            ->get();
+
+        return $payments
+            ->groupBy(fn (Transaction $payment): string => $payment->credit_card_invoice_id.'|'.$payment->competence_date->format('Y-m'))
+            ->map(function (Collection $rows): array {
+                /** @var Transaction $first */
+                $first = $rows->first();
+                $invoice = $first->creditCardInvoice;
+                $date = $rows->min('transaction_date');
+
+                return $this->invoiceSummaryRow(
+                    id: 'invoice-payment-'.$invoice->id.'-'.$first->competence_date->format('Y-m'),
+                    invoice: $invoice,
+                    accountId: (int) $first->account_id,
+                    amount: (int) $rows->sum(fn (Transaction $row): int => (int) $row->invoicePayments->sum('amount')),
+                    status: TransactionStatus::POSTED->value,
+                    transactionDate: $date?->toDateString(),
+                    competenceDate: $first->competence_date->toDateString(),
+                    isThirdParty: false,
+                );
+            })
+            ->values();
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    private function invoiceForecastSummaries(Account $account, TransactionListFilterDTO $filters): Collection
+    {
+        if (($filters->type !== null && $filters->type !== TransactionType::EXPENSE)
+            || ($filters->status !== null && $filters->status !== TransactionStatus::PROJECTED)
+            || $filters->categoryId !== null || $filters->merchantId !== null) {
+            return collect();
+        }
+
+        $invoices = CreditCardInvoice::query()
+            ->with([
+                'creditCard:id,name,account_id',
+                'transactions' => fn (Builder $query) => $query
+                    ->whereDoesntHave('invoicePayments')
+                    ->where('status', '!=', TransactionStatus::CANCELLED)
+                    ->when(! $filters->includeThirdParty, fn (Builder $query) => $query->where('is_third_party', false))
+                    ->select(['id', 'credit_card_invoice_id', 'amount', 'is_third_party']),
+                'payments:id,credit_card_invoice_id,amount',
+            ])
+            ->where('wallet_id', $account->wallet_id)
+            ->whereHas('creditCard', fn (Builder $query) => $query->where('account_id', $account->id))
+            ->where('status', '!=', 'PAID')
+            ->when($filters->month !== null, fn (Builder $query) => $query->where('reference_month', $filters->month))
+            ->get();
+
+        return $invoices->map(function (CreditCardInvoice $invoice) use ($filters): ?array {
+            $components = $invoice->transactions;
+            $invoiceAmount = (int) $components->sum('amount');
+            $paidAmount = (int) $invoice->payments->sum('amount');
+            $remaining = max(0, $invoiceAmount - $paidAmount);
+            if ($remaining === 0) {
+                return null;
+            }
+
+            $referenceDate = Carbon::createFromFormat('!Y-m', $invoice->reference_month)->toDateString();
+            $dueDate = $invoice->due_date?->toDateString();
+            if (($filters->transactionDateFrom !== null && ($dueDate === null || $dueDate < $filters->transactionDateFrom))
+                || ($filters->transactionDateTo !== null && ($dueDate === null || $dueDate > $filters->transactionDateTo))
+                || ($filters->competenceDateFrom !== null && $referenceDate < $filters->competenceDateFrom)
+                || ($filters->competenceDateTo !== null && $referenceDate > $filters->competenceDateTo)) {
+                return null;
+            }
+
+            return $this->invoiceSummaryRow(
+                id: 'invoice-forecast-'.$invoice->id,
+                invoice: $invoice,
+                accountId: (int) $invoice->creditCard->account_id,
+                amount: $remaining,
+                status: TransactionStatus::PROJECTED->value,
+                transactionDate: $invoice->due_date?->toDateString() ?? $referenceDate,
+                competenceDate: $referenceDate,
+                isThirdParty: $filters->includeThirdParty && $components->contains(fn (Transaction $transaction): bool => (bool) $transaction->is_third_party),
+            );
+        })->filter()->values();
+    }
+
+    /** @return array<string, mixed> */
+    private function invoiceSummaryRow(string $id, CreditCardInvoice $invoice, int $accountId, int $amount, string $status, ?string $transactionDate, string $competenceDate, bool $isThirdParty): array
+    {
+        return [
+            'id' => $id,
+            'wallet_id' => $invoice->wallet_id,
+            'account_id' => $accountId,
+            'category_id' => null,
+            'merchant_id' => null,
+            'description' => 'Pagamento de fatura '.$invoice->creditCard->name.' '.Carbon::createFromFormat('!Y-m', $invoice->reference_month)->format('m/Y'),
+            'type' => TransactionType::EXPENSE->value,
+            'effect' => TransactionEffect::DEBIT->value,
+            'amount' => $amount,
+            'financial_instrument_type' => FinancialInstrumentType::ACCOUNT->value,
+            'transaction_date' => $transactionDate,
+            'competence_date' => $competenceDate,
+            'due_date' => $invoice->due_date?->toDateString(),
+            'recurrence_type' => null,
+            'installment_initial' => null,
+            'installment_count' => null,
+            'installment_periodicity' => null,
+            'auto_post_on_due_date' => false,
+            'paid_at' => $status === TransactionStatus::POSTED->value ? $invoice->paid_at : null,
+            'status' => $status,
+            'payment_channel' => null,
+            'notes' => null,
+            'is_third_party' => $isThirdParty,
+            'recurring_transaction_id' => null,
+            'credit_card_invoice_id' => $invoice->id,
+            'installment_id' => null,
+            'transfer_group_id' => null,
+            'reversal_of_transaction_id' => null,
+            'has_reversal' => false,
+            'source' => 'internal',
+            'created_by_member_id' => null,
+            'updated_by_member_id' => null,
+            'created_at' => null,
+            'is_invoice_summary' => true,
+        ];
+    }
+
+    private function movementValue(Transaction|array $movement, string $field): mixed
+    {
+        $value = is_array($movement) ? ($movement[$field] ?? null) : $movement->{$field};
+
+        return $value instanceof \DateTimeInterface ? $value->format('Y-m-d H:i:s') : $value;
     }
 
     public function totalAmountForWallet(TransactionListFilterDTO $filters): int

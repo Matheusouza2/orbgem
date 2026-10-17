@@ -112,6 +112,7 @@ const FinancialService = {
         return request(`/api/v1/transactions?${params}`, requestOptions);
     },
     listAccountTransactions: async (accountId, params = {}, options = {}) => request(`/api/v1/transactions?${new URLSearchParams({ account_id: accountId, ...params })}`, options),
+    listAccountMovements: async (accountId, params = {}, options = {}) => request(`/api/v1/accounts/${accountId}/movements?${new URLSearchParams(params)}`, options),
     getSummary: async (walletId, month, options = {}) => {
         const { includeThirdParty = true, ...requestOptions } = options;
         const params = new URLSearchParams({ wallet_id: walletId, month, include_third_party: includeThirdParty ? '1' : '0' });

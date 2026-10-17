@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\DTO\MonthlySummaryDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\TransactionListFilterDTO;
+use App\Models\Account;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -30,6 +31,9 @@ interface TransactionRepositoryInterface
     public function lockReversalsForOriginals(array $transactionIds): Collection;
 
     public function forWallet(TransactionListFilterDTO $filters): LengthAwarePaginator;
+
+    /** @return array{movements: LengthAwarePaginator, total_amount: int} */
+    public function accountMovements(Account $account, TransactionListFilterDTO $filters): array;
 
     public function totalAmountForWallet(TransactionListFilterDTO $filters): int;
 

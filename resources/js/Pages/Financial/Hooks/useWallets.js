@@ -253,7 +253,7 @@ export default function useWallets() {
         setAccountTransactionsError('');
 
         try {
-            const response = await FinancialService.listAccountTransactions(account.id, {
+            const response = await FinancialService.listAccountMovements(account.id, {
                 wallet_id: account.wallet_id,
                 month: filters.month,
                 status: filters.status,

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AccountMovementController;
 use App\Http\Controllers\Api\AccountTransferController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrapiQuoteController;
@@ -52,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/accounts', [AccountController::class, 'store']);
     Route::get('/accounts', [AccountController::class, 'index']);
     Route::patch('/accounts/{account}', [AccountController::class, 'update'])->whereNumber('account');
+    Route::get('/accounts/{account}/movements', [AccountMovementController::class, 'index'])->whereNumber('account');
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::patch('/categories/{category}', [CategoryController::class, 'update'])->whereNumber('category');
