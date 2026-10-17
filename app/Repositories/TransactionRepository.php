@@ -156,7 +156,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->where('status', TransactionStatus::POSTED)
             ->when($filters->month !== null, function (Builder $query) use ($filters): void {
                 [$start, $end] = $this->monthBounds($filters->month);
-                $query->where('due_date', '>=', $start)->where('due_date', '<', $end);
+                $query->where('transaction_date', '>=', $start)->where('transaction_date', '<', $end);
             })
             ->when($filters->status !== null, fn (Builder $query) => $query->where('status', $filters->status))
             ->when($filters->status === null && $filters->activeStatusesOnly, fn (Builder $query) => $query->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED]))
