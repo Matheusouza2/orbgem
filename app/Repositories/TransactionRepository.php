@@ -14,6 +14,7 @@ use App\Models\CreditCardInvoice;
 use App\Models\Transaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -190,7 +191,7 @@ class TransactionRepository implements TransactionRepositoryInterface
         $invoices = CreditCardInvoice::query()
             ->with([
                 'creditCard:id,name,account_id',
-                'transactions' => fn (Builder $query) => $query
+                'transactions' => fn (HasMany $query) => $query
                     ->whereDoesntHave('invoicePayments')
                     ->where('status', '!=', TransactionStatus::CANCELLED)
                     ->when(! $filters->includeThirdParty, fn (Builder $query) => $query->where('is_third_party', false))
