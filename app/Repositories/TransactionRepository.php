@@ -142,7 +142,13 @@ class TransactionRepository implements TransactionRepositoryInterface
         }
 
         $payments = Transaction::query()
-            ->with(['creditCardInvoice.creditCard', 'invoicePayments'])
+            ->with([
+                'creditCardInvoice.creditCard',
+                'creditCardInvoice.transactions' => fn (HasMany $query) => $query
+                    ->whereDoesntHave('invoicePayments')
+                    ->where('status', '!=', TransactionStatus::CANCELLED),
+                'invoicePayments',
+            ])
             ->where('wallet_id', $account->wallet_id)
             ->where('account_id', $account->id)
             ->whereNotNull('credit_card_invoice_id')
@@ -159,23 +165,32 @@ class TransactionRepository implements TransactionRepositoryInterface
 
         return $payments
             ->groupBy(fn (Transaction $payment): string => $payment->credit_card_invoice_id.'|'.$payment->competence_date->format('Y-m'))
-            ->map(function (Collection $rows): array {
+            ->map(function (Collection $rows) use ($filters): ?array {
                 /** @var Transaction $first */
                 $first = $rows->first();
                 $invoice = $first->creditCardInvoice;
                 $date = $rows->min('transaction_date');
 
+                $amount = (int) $rows->sum(fn (Transaction $row): int => (int) $row->invoicePayments->sum('amount'));
+                if (! $filters->includeThirdParty) {
+                    $amount = $this->amountExcludingThirdParty($amount, $invoice->transactions);
+                }
+                if ($amount === 0) {
+                    return null;
+                }
+
                 return $this->invoiceSummaryRow(
                     id: 'invoice-payment-'.$invoice->id.'-'.$first->competence_date->format('Y-m'),
                     invoice: $invoice,
                     accountId: (int) $first->account_id,
-                    amount: (int) $rows->sum(fn (Transaction $row): int => (int) $row->invoicePayments->sum('amount')),
+                    amount: $amount,
                     status: TransactionStatus::POSTED->value,
                     transactionDate: $date?->toDateString(),
                     competenceDate: $first->competence_date->toDateString(),
                     isThirdParty: false,
                 );
             })
+            ->filter()
             ->values();
     }
 
@@ -194,7 +209,6 @@ class TransactionRepository implements TransactionRepositoryInterface
                 'transactions' => fn (HasMany $query) => $query
                     ->whereDoesntHave('invoicePayments')
                     ->where('status', '!=', TransactionStatus::CANCELLED)
-                    ->when(! $filters->includeThirdParty, fn (Builder $query) => $query->where('is_third_party', false))
                     ->select(['id', 'credit_card_invoice_id', 'amount', 'is_third_party']),
                 'payments:id,credit_card_invoice_id,amount',
             ])
@@ -206,8 +220,13 @@ class TransactionRepository implements TransactionRepositoryInterface
 
         return $invoices->map(function (CreditCardInvoice $invoice) use ($filters): ?array {
             $components = $invoice->transactions;
-            $invoiceAmount = (int) $components->sum('amount');
+            $invoiceAmount = (int) ($filters->includeThirdParty
+                ? $components->sum('amount')
+                : $components->where('is_third_party', false)->sum('amount'));
             $paidAmount = (int) $invoice->payments->sum('amount');
+            if (! $filters->includeThirdParty) {
+                $paidAmount = $this->amountExcludingThirdParty($paidAmount, $components);
+            }
             $remaining = max(0, $invoiceAmount - $paidAmount);
             if ($remaining === 0) {
                 return null;
@@ -233,6 +252,15 @@ class TransactionRepository implements TransactionRepositoryInterface
                 isThirdParty: $filters->includeThirdParty && $components->contains(fn (Transaction $transaction): bool => (bool) $transaction->is_third_party),
             );
         })->filter()->values();
+    }
+
+    /** @param Collection<int, Transaction> $components */
+    private function amountExcludingThirdParty(int $amount, Collection $components): int
+    {
+        $grossAmount = (int) $components->sum('amount');
+        $ownAmount = (int) $components->where('is_third_party', false)->sum('amount');
+
+        return $grossAmount > 0 ? (int) round($amount * $ownAmount / $grossAmount) : 0;
     }
 
     /** @return array<string, mixed> */
