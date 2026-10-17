@@ -124,6 +124,7 @@ export default function useInvestments() {
 
     const submitIncome = async (event) => {
         event.preventDefault();
+        const keepOpen = event.nativeEvent?.submitter?.value === 'continue';
         setManualIncomeErrors({});
         setIncomeErrors({});
         setManualIncomeSubmitting(true);
@@ -132,9 +133,13 @@ export default function useInvestments() {
             if (editingIncome) await FinancialService.updateInvestmentIncome(editingIncome.id, payload);
             else await FinancialService.createInvestmentIncome(payload);
             await Promise.all([loadIncome(selectedWalletId), Object.values(incomeFilters).some(Boolean) ? loadDashboardIncome(selectedWalletId) : Promise.resolve()]);
-            setManualIncomeOpen(false);
-            setEditingIncome(null);
-            manualIncomeForm.reset();
+            if (keepOpen && !editingIncome) {
+                manualIncomeForm.setData('amount', '');
+            } else {
+                setManualIncomeOpen(false);
+                setEditingIncome(null);
+                manualIncomeForm.reset();
+            }
         } catch (error) {
             setManualIncomeErrors(normalizeErrors(error));
         } finally {
