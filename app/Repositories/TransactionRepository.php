@@ -6,6 +6,7 @@ use App\DTO\MonthlySummaryDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\TransactionListFilterDTO;
 use App\Enums\TransactionEffect;
+use App\Enums\FinancialInstrumentType;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
@@ -88,7 +89,18 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->where('wallet_id', $filters->walletId)
             ->when(! $filters->includeThirdParty, fn ($query) => $query->where('is_third_party', false));
         if ($filters->accountId !== null) {
-            $query->where('account_id', $filters->accountId);
+            $query->where(function (Builder $query) use ($filters): void {
+                $query->where('account_id', $filters->accountId)
+                    ->orWhere(function (Builder $query) use ($filters): void {
+                        $query->whereNull('account_id')
+                            ->where('financial_instrument_type', FinancialInstrumentType::CREDIT_CARD)
+                            ->where('status', TransactionStatus::PROJECTED)
+                            ->whereHas('creditCardInvoice', function (Builder $invoiceQuery) use ($filters): void {
+                                $invoiceQuery->whereDoesntHave('payments')
+                                    ->whereHas('creditCard', fn (Builder $cardQuery) => $cardQuery->where('account_id', $filters->accountId));
+                            });
+                    });
+            });
         }
         if ($filters->merchantId !== null) {
             $query->where('merchant_id', $filters->merchantId);
@@ -97,7 +109,17 @@ class TransactionRepository implements TransactionRepositoryInterface
             $query->where('category_id', $filters->categoryId);
         }
         if ($filters->type !== null) {
-            $query->where('type', $filters->type);
+            $query->where(function (Builder $query) use ($filters): void {
+                $query->where('type', $filters->type);
+
+                if ($filters->type === TransactionType::EXPENSE) {
+                    $query->orWhere(function (Builder $query): void {
+                        $query->where('type', TransactionType::TRANSFER)
+                            ->where('effect', TransactionEffect::DEBIT)
+                            ->whereHas('invoicePayments');
+                    });
+                }
+            });
         }
         if ($filters->status !== null) {
             $query->where('status', $filters->status);
