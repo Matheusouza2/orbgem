@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CreditCardPurchase extends Model
 {
-    protected $fillable = ['wallet_id', 'credit_card_id', 'category_id', 'merchant_id', 'description', 'purchase_date', 'total_amount', 'installment_count'];
+    protected $fillable = ['wallet_id', 'credit_card_id', 'category_id', 'merchant_id', 'description', 'purchase_date', 'due_date', 'total_amount', 'installment_count'];
 
     protected function casts(): array
     {
-        return ['purchase_date' => 'date', 'total_amount' => 'integer', 'installment_count' => 'integer'];
+        return ['purchase_date' => 'date', 'due_date' => 'date', 'total_amount' => 'integer', 'installment_count' => 'integer'];
     }
 
     public function wallet(): BelongsTo

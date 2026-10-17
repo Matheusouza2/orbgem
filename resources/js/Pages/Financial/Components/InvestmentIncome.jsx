@@ -1,12 +1,12 @@
 import { Button } from 'flowbite-react';
-import { CalendarDays, CircleDollarSign, Filter, Plus } from 'lucide-react';
+import { CalendarDays, CircleDollarSign, Filter, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Suspense } from 'react';
 import Inputs from '@/Components/Inputs';
 import { formatDateBR } from '@/Utils/date';
 
 const money = (value) => (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export default function InvestmentIncome({ income, investments, filters, loading, onFilterChange, onApply, onCreateIncome }) {
+export default function InvestmentIncome({ income, investments, filters, loading, errors = {}, onFilterChange, onApply, onCreateIncome, onEditIncome, onDeleteIncome }) {
     const total = income.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
     return <section className="ledger-panel mt-6 overflow-hidden">
@@ -24,6 +24,7 @@ export default function InvestmentIncome({ income, investments, filters, loading
                 </div>
             </Suspense>
         </div>
-        {loading ? <div className="ledger-state p-6" role="status">Carregando rendimentos…</div> : income.length === 0 ? <div className="ledger-empty p-8"><CalendarDays className="mx-auto h-8 w-8 text-orbital-primary" aria-hidden="true" /><p className="mt-3 font-semibold text-orbital-primary-dark">Nenhum rendimento encontrado.</p><p className="mt-1 text-sm text-orbital-text-secondary">Sincronize seus investimentos no Open Finance para importar proventos.</p></div> : <div className="divide-y divide-orbital-border">{income.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><CircleDollarSign className="h-4 w-4" aria-hidden="true" /></span><div className="min-w-0"><p className="truncate font-semibold text-orbital-text-primary">{item.ticker || item.investment_name}</p><p className="truncate text-xs text-orbital-text-secondary">{item.description}</p></div></div><div className="text-right"><p className="font-bold text-emerald-700">+ {money(item.amount)}</p><p className="text-xs text-orbital-text-secondary">{formatDateBR(item.transaction_date)}</p></div></div>)}</div>}
+        {Object.keys(errors).length > 0 && <div className="ledger-error mx-5 mt-4" role="alert">{Object.values(errors).flat()[0]}</div>}
+        {loading ? <div className="ledger-state p-6" role="status">Carregando rendimentos…</div> : income.length === 0 ? <div className="ledger-empty p-8"><CalendarDays className="mx-auto h-8 w-8 text-orbital-primary" aria-hidden="true" /><p className="mt-3 font-semibold text-orbital-primary-dark">Nenhum rendimento encontrado.</p><p className="mt-1 text-sm text-orbital-text-secondary">Sincronize seus investimentos no Open Finance para importar proventos.</p></div> : <div className="divide-y divide-orbital-border">{income.map((item) => <div key={`${item.source}-${item.id}`} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><CircleDollarSign className="h-4 w-4" aria-hidden="true" /></span><div className="min-w-0"><p className="truncate font-semibold text-orbital-text-primary">{item.ticker || item.investment_name}</p><p className="truncate text-xs text-orbital-text-secondary">{item.description}</p></div></div><div className="flex items-center gap-3"><div className="text-right"><p className="font-bold text-emerald-700">+ {money(item.amount)}</p><p className="text-xs text-orbital-text-secondary">{formatDateBR(item.transaction_date)}</p></div>{item.source === 'MANUAL' && <div className="flex gap-1"><Button color="light" size="xs" onClick={() => onEditIncome(item)} aria-label={`Editar rendimento de ${item.ticker || item.investment_name}`} title="Editar rendimento"><Pencil className="h-4 w-4" aria-hidden="true" /></Button><Button color="failure" size="xs" onClick={() => onDeleteIncome(item)} aria-label={`Apagar rendimento de ${item.ticker || item.investment_name}`} title="Apagar rendimento"><Trash2 className="h-4 w-4" aria-hidden="true" /></Button></div>}</div></div>)}</div>}
     </section>;
 }

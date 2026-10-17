@@ -301,7 +301,9 @@ Retorna `204`.
 ```
 
 Retorna a compra e suas parcelas. O valor total é em centavos. `due_date` é
-opcional e, quando informado, determina a fatura de referência da compra.
+opcional e, quando informado, determina a fatura de referência da compra e é
+mantido como vencimento informado para exibição nos movimentos do cartão. A
+data de vencimento calculada para a fatura continua disponível em `invoice.due_date`.
 
 ### `PUT /credit-card-purchases/{purchase}`
 
@@ -371,6 +373,17 @@ Registra um rendimento manual para um investimento. Payload:
 `amount` é informado em centavos. Retorna o rendimento criado com
 `investment_id`, `investment_name`, `ticker`, `description`, `event_type`,
 `amount`, `transaction_date` e `source`.
+
+### `PUT /investment-income/{income}`
+
+Atualiza um rendimento manual. Recebe `investment_id`, `amount` em centavos e
+`transaction_date`. O investimento informado deve pertencer à mesma carteira
+do rendimento.
+
+### `DELETE /investment-income/{income}`
+
+Remove um rendimento manual e retorna `204`. Rendimentos importados pelo Open
+Finance não podem ser alterados ou removidos por estes endpoints.
 
 ### `GET /investments/{investment}/positions`
 

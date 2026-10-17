@@ -48,4 +48,18 @@ class ExternalInvestmentTransactionService
             'source' => 'MANUAL',
         ]);
     }
+
+    public function updateManual(InvestmentIncome $income, Investment $investment, int $amount, string $date): InvestmentIncome
+    {
+        return $this->manualIncome->update($income, [
+            'investment_id' => $investment->id,
+            'amount' => $amount,
+            'transaction_date' => $date,
+        ]);
+    }
+
+    public function deleteManual(InvestmentIncome $income): void
+    {
+        $this->manualIncome->delete($income);
+    }
 }

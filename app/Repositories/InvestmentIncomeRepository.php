@@ -13,6 +13,18 @@ class InvestmentIncomeRepository implements InvestmentIncomeRepositoryInterface
         return InvestmentIncome::query()->create($attributes);
     }
 
+    public function update(InvestmentIncome $income, array $attributes): InvestmentIncome
+    {
+        $income->update($attributes);
+
+        return $income->fresh('investment');
+    }
+
+    public function delete(InvestmentIncome $income): void
+    {
+        $income->delete();
+    }
+
     public function forWallet(int $walletId, ?int $investmentId = null, ?string $from = null, ?string $to = null): Collection
     {
         return InvestmentIncome::query()

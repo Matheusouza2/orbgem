@@ -13,6 +13,6 @@ final readonly class CreditCardPurchaseDTO
 
     public function toArray(): array
     {
-        return ['wallet_id' => $this->walletId, 'credit_card_id' => $this->creditCardId, 'category_id' => $this->categoryId, 'merchant_id' => $this->merchantId, 'description' => $this->description, 'purchase_date' => $this->purchaseDate, 'total_amount' => $this->totalAmount, 'installment_count' => $this->installmentCount];
+        return ['wallet_id' => $this->walletId, 'credit_card_id' => $this->creditCardId, 'category_id' => $this->categoryId, 'merchant_id' => $this->merchantId, 'description' => $this->description, 'purchase_date' => $this->purchaseDate, 'due_date' => $this->dueDate, 'total_amount' => $this->totalAmount, 'installment_count' => $this->installmentCount];
     }
 }

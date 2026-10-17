@@ -10,6 +10,7 @@ use App\Http\Requests\Investment\CreateInvestmentRequest;
 use App\Http\Requests\Investment\ListInvestmentIncomeRequest;
 use App\Http\Requests\Investment\ListInvestmentRequest;
 use App\Http\Requests\Investment\ListInvestmentYieldsRequest;
+use App\Http\Requests\Investment\UpdateInvestmentIncomeRequest;
 use App\Http\Resources\InvestmentIncomeResource;
 use App\Http\Resources\InvestmentPositionHistoryResource;
 use App\Http\Resources\InvestmentPositionResource;
@@ -17,10 +18,12 @@ use App\Http\Resources\InvestmentResource;
 use App\Http\Resources\InvestmentYieldResource;
 use App\Models\Investment;
 use App\Models\InvestmentPosition;
+use App\Models\InvestmentIncome;
 use App\UseCases\Investment\CreateInvestmentIncomeUseCase;
 use App\UseCases\Investment\CreateInvestmentUseCase;
 use App\UseCases\Investment\DeleteInvestmentPositionUseCase;
 use App\UseCases\Investment\DeleteInvestmentUseCase;
+use App\UseCases\Investment\DeleteInvestmentIncomeUseCase;
 use App\UseCases\Investment\ListInvestmentIncomeUseCase;
 use App\UseCases\Investment\ListInvestmentPositionHistoryUseCase;
 use App\UseCases\Investment\ListInvestmentPositionsUseCase;
@@ -28,6 +31,7 @@ use App\UseCases\Investment\ListInvestmentsUseCase;
 use App\UseCases\Investment\ListInvestmentYieldsUseCase;
 use App\UseCases\Investment\UpdateInvestmentPositionUseCase;
 use App\UseCases\Investment\UpdateInvestmentUseCase;
+use App\UseCases\Investment\UpdateInvestmentIncomeUseCase;
 use App\UseCases\Investment\UpsertInvestmentPositionUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -64,6 +68,18 @@ class InvestmentController extends Controller
             $request->date('transaction_date')->toDateString(),
             $request->user(),
         ));
+    }
+
+    public function updateIncome(UpdateInvestmentIncomeRequest $request, InvestmentIncome $income, UpdateInvestmentIncomeUseCase $useCase): InvestmentIncomeResource
+    {
+        return new InvestmentIncomeResource($useCase->execute($income, $request->validated(), $request->user()));
+    }
+
+    public function deleteIncome(Request $request, InvestmentIncome $income, DeleteInvestmentIncomeUseCase $useCase): Response
+    {
+        $useCase->execute($income, $request->user());
+
+        return response()->noContent();
     }
 
     public function positions(Request $request, Investment $investment, ListInvestmentPositionsUseCase $useCase): AnonymousResourceCollection

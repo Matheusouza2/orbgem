@@ -30,6 +30,7 @@ class CreditCardTransactionResource extends JsonResource
                 'id' => $this->installment->purchase->id,
                 'description' => $this->installment->purchase->description,
                 'purchase_date' => $this->installment->purchase->purchase_date?->toDateString(),
+                'due_date' => $this->installment->purchase->due_date?->toDateString(),
                 'total_amount' => $this->installment->purchase->total_amount,
                 'installment_count' => $this->installment->purchase->installment_count,
                 'category_id' => $this->installment->purchase->category_id,

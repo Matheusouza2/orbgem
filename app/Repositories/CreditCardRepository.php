@@ -87,7 +87,7 @@ class CreditCardRepository implements CreditCardRepositoryInterface
             ->when($withDetails, fn (Builder $query): Builder => $query->with([
                 'creditCardInvoice:id,credit_card_id,reference_month,due_date,status',
                 'installment:id,credit_card_purchase_id,credit_card_invoice_id,number,status',
-                'installment.purchase:id,description,purchase_date,total_amount,installment_count,category_id,merchant_id',
+                'installment.purchase:id,description,purchase_date,due_date,total_amount,installment_count,category_id,merchant_id',
                 'externalTransactions:id,transaction_id,source',
             ]))
             ->where('wallet_id', $dto->walletId)

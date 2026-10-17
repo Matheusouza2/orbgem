@@ -104,6 +104,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('investments', InvestmentController::class)->except(['show']);
     Route::get('/investment-income', [InvestmentController::class, 'income']);
     Route::post('/investment-income', [InvestmentController::class, 'storeIncome']);
+    Route::put('/investment-income/{income}', [InvestmentController::class, 'updateIncome'])->whereNumber('income');
+    Route::delete('/investment-income/{income}', [InvestmentController::class, 'deleteIncome'])->whereNumber('income');
     Route::get('/investments/{investment}/yields', [InvestmentController::class, 'yields'])->whereNumber('investment');
     Route::get('/investments/{investment}/positions', [InvestmentController::class, 'positions'])->whereNumber('investment');
     Route::post('/investments/{investment}/positions', [InvestmentController::class, 'upsertPosition'])->whereNumber('investment');
