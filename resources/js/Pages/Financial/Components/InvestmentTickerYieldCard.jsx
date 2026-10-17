@@ -61,7 +61,7 @@ export default function InvestmentTickerYieldCard({ investments, income, onOpenT
     const capital = rows.reduce((sum, row) => sum + row.capital, 0);
     const totalYearRate = capital > 0 ? (yearIncome / capital) * 100 : 0;
     const currentMonth = months[months.length - 1];
-    const currentMonthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    const currentMonthKey = `${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, '0')}`;
     const currentMonthIncome = rows.reduce((sum, row) => sum + (row.monthIncome.get(currentMonthKey) || 0), 0);
     const currentMonthRate = capital > 0 ? (currentMonthIncome / capital) * 100 : 0;
 
