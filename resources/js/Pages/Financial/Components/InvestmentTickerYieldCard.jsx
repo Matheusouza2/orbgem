@@ -6,7 +6,10 @@ const money = (cents) => (Number(cents || 0) / 100).toLocaleString('pt-BR', { st
 const percentage = (value) => `${Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
 function monthsForYear(date) {
-    return Array.from({ length: 6 }, (_, index) => new Date(date.getFullYear(), date.getMonth() - 5 + index, 1));
+    return Array.from({ length: 6 }, (_, index) => {
+        const monthDate = new Date(date.getFullYear(), date.getMonth() - 5 + index, 1);
+        return { year: monthDate.getFullYear(), month: monthDate.getMonth(), label: monthLabel(monthDate) };
+    });
 }
 
 function getTickerRows(investments, income, months, currentYear) {
