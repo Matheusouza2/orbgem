@@ -104,6 +104,14 @@ Route::middleware('auth')->group(function (): void {
         ]);
     })->name('financial.investments');
 
+    Route::get('/assistente', function (Request $request) {
+        $user = $request->user();
+
+        return Inertia::render('Financial/Assistant', [
+            'auth' => ['user' => $user?->only(['id', 'name', 'email'])],
+        ]);
+    })->name('financial.assistant');
+
     Route::get('/open-finance', function (Request $request) {
         $user = $request->user();
 

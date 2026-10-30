@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\AiException;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('transactions:post-due')->daily()->withoutOverlapping(30);
         $schedule->command('notifications:send-financial-reminders')->daily()->withoutOverlapping(30);
         $schedule->command('investments:accrue-cdi')->daily()->withoutOverlapping(30);
+        $schedule->command('ai:refresh-summaries')->dailyAt('03:00')->withoutOverlapping(30);
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
@@ -32,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(fn (AiException $exception, Request $request) => response()->json(['message' => 'O assistente de IA está indisponível no momento. Tente novamente em instantes.'], 503));
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

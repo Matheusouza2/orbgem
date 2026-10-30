@@ -3,6 +3,7 @@ import {
     ArrowLeftRight,
     CreditCard,
     Landmark,
+    Sparkles,
     PanelLeftClose,
     PanelLeftOpen,
     ReceiptText,
@@ -27,6 +28,7 @@ const navigationItems = [
     { label: 'Categorias', href: '/categorias', icon: Tags },
     { label: 'Metas', href: '/metas', icon: Target },
     { label: 'Investimentos', href: '/investimentos', icon: TrendingUp },
+    { label: 'Assistente IA', href: '/assistente', icon: Sparkles },
     { label: 'Open Finance', href: '/open-finance', icon: Link2 },
     { label: 'Recorrências', href: '/recorrencias', icon: ArrowLeftRight },
 ];

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Investment;
+use App\Models\Transaction;
+use App\Observers\FinancialSummaryObserver;
 use App\Repositories\AccountRepository;
 use App\Repositories\AccountRepositoryInterface;
 use App\Repositories\BudgetRepository;
@@ -26,14 +29,16 @@ use App\Repositories\FinancialCommitmentRepository;
 use App\Repositories\FinancialCommitmentRepositoryInterface;
 use App\Repositories\FinancialConnectionRepository;
 use App\Repositories\FinancialConnectionRepositoryInterface;
+use App\Repositories\FinancialSummaryRepository;
+use App\Repositories\FinancialSummaryRepositoryInterface;
 use App\Repositories\InstallmentRepository;
 use App\Repositories\InstallmentRepositoryInterface;
-use App\Repositories\InvestmentRepository;
-use App\Repositories\InvestmentRepositoryInterface;
-use App\Repositories\InvestmentPositionRepository;
-use App\Repositories\InvestmentPositionRepositoryInterface;
 use App\Repositories\InvestmentIncomeRepository;
 use App\Repositories\InvestmentIncomeRepositoryInterface;
+use App\Repositories\InvestmentPositionRepository;
+use App\Repositories\InvestmentPositionRepositoryInterface;
+use App\Repositories\InvestmentRepository;
+use App\Repositories\InvestmentRepositoryInterface;
 use App\Repositories\InvoicePaymentRepository;
 use App\Repositories\InvoicePaymentRepositoryInterface;
 use App\Repositories\MerchantRepository;
@@ -76,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FinancialCommitmentRepositoryInterface::class, FinancialCommitmentRepository::class);
         $this->app->bind(BudgetRepositoryInterface::class, BudgetRepository::class);
         $this->app->bind(PlanningReportRepositoryInterface::class, PlanningReportRepository::class);
+        $this->app->bind(FinancialSummaryRepositoryInterface::class, FinancialSummaryRepository::class);
         $this->app->bind(Slice5RepositoryInterface::class, Slice5Repository::class);
         $this->app->bind(InvestmentRepositoryInterface::class, InvestmentRepository::class);
         $this->app->bind(InvestmentPositionRepositoryInterface::class, InvestmentPositionRepository::class);
@@ -91,5 +97,9 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void {}
+    public function boot(): void
+    {
+        Transaction::observe(FinancialSummaryObserver::class);
+        Investment::observe(FinancialSummaryObserver::class);
+    }
 }

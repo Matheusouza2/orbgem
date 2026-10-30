@@ -12,6 +12,7 @@ const pageTitles = {
     '/categorias': 'Categorias',
     '/metas': 'Metas',
     '/investimentos': 'Investimentos',
+    '/assistente': 'Assistente IA',
     '/open-finance': 'Open Finance',
     '/recorrencias': 'Recorrências',
     '/perfil': 'Perfil',

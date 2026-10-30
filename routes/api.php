@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AccountMovementController;
 use App\Http\Controllers\Api\AccountTransferController;
+use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrapiQuoteController;
 use App\Http\Controllers\Api\BudgetController;
@@ -103,6 +104,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/open-finance/items', [OpenFinanceController::class, 'store']);
     Route::delete('/open-finance/items/{item}', [OpenFinanceController::class, 'destroy'])->whereNumber('item');
     Route::get('/market/quote', BrapiQuoteController::class);
+    Route::get('/ai/summary', [AiController::class, 'summary'])->middleware('throttle:10,1');
+    Route::post('/ai/summary/refresh', [AiController::class, 'refresh'])->middleware('throttle:3,1');
+    Route::post('/ai/chat', [AiController::class, 'chat'])->middleware('throttle:20,1');
     Route::apiResource('investments', InvestmentController::class)->except(['show']);
     Route::get('/investment-income', [InvestmentController::class, 'income']);
     Route::post('/investment-income', [InvestmentController::class, 'storeIncome']);

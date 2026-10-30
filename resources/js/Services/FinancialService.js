@@ -136,6 +136,9 @@ const FinancialService = {
     createCategory: async (payload, options = {}) => request('/api/v1/categories', { method: 'POST', body: JSON.stringify(payload), ...options }),
     updateCategory: async (categoryId, payload, options = {}) => request(`/api/v1/categories/${categoryId}`, { method: 'PATCH', body: JSON.stringify(payload), ...options }),
     createTransfer: async (payload, options = {}) => request('/api/v1/account-transfers', { method: 'POST', body: JSON.stringify(payload), ...options }),
+    getAiSummary: async (walletId, options = {}) => (await request(`/api/v1/ai/summary?wallet_id=${walletId}`, options)).data,
+    refreshAiSummary: async (walletId, options = {}) => request('/api/v1/ai/summary/refresh', { method: 'POST', body: JSON.stringify({ wallet_id: walletId }), ...options }),
+    sendAiMessage: async (payload, options = {}) => (await request('/api/v1/ai/chat', { method: 'POST', body: JSON.stringify(payload), ...options })).data,
     reverseTransaction: async (transactionId, payload, options = {}) => request(`/api/v1/transactions/${transactionId}/reversal`, { method: 'POST', body: JSON.stringify(payload), ...options }),
 };
 
