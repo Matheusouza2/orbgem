@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrapiQuoteController;
 use App\Http\Controllers\Api\BudgetController;
+use App\Http\Controllers\Api\BankReconciliationController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CreditCardController;
 use App\Http\Controllers\Api\CreditCardInvoiceController;
@@ -40,6 +41,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/open-finance/webhook', [OpenFinanceController::class, 'webhook'])->name('api.open-finance.webhook');
 
 Route::middleware('auth:sanctum')->group(function (): void {
+    Route::delete('/user', [AuthController::class, 'destroy']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/auth/logout-all', [AuthController::class, 'logoutAll']);
     Route::get('/auth/tokens', [AuthController::class, 'tokens']);
@@ -55,6 +57,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/accounts', [AccountController::class, 'index']);
     Route::patch('/accounts/{account}', [AccountController::class, 'update'])->whereNumber('account');
     Route::get('/accounts/{account}/movements', [AccountMovementController::class, 'index'])->whereNumber('account');
+    Route::post('/bank-reconciliations', [BankReconciliationController::class, 'store']);
+    Route::get('/bank-reconciliations/{reconciliation}', [BankReconciliationController::class, 'show'])->whereNumber('reconciliation');
+    Route::post('/bank-reconciliations/{reconciliation}/import', [BankReconciliationController::class, 'import'])->whereNumber('reconciliation');
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::patch('/categories/{category}', [CategoryController::class, 'update'])->whereNumber('category');
@@ -63,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/transactions', [TransactionController::class, 'store']);
     Route::put('/transactions/{transaction}', [TransactionController::class, 'update'])->whereNumber('transaction');
     Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->whereNumber('transaction');
+    Route::patch('/transactions/{transaction}/recurring-date', [TransactionController::class, 'updateRecurringOccurrenceDate'])->whereNumber('transaction');
     Route::post('/transactions/{transaction}/effectivate', [TransactionController::class, 'effectivate'])->whereNumber('transaction');
     Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->whereNumber('transaction');
     Route::post('/transactions/{transaction}/reversal', [TransactionReversalController::class, 'store'])->whereNumber('transaction');

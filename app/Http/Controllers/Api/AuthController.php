@@ -6,12 +6,14 @@ use App\DTO\LoginDTO;
 use App\DTO\PasswordResetDTO;
 use App\DTO\RegisterDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\DeleteAccountRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\AuthResource;
 use App\Http\Resources\TokenResource;
+use App\UseCases\Auth\DeleteAccountUseCase;
 use App\UseCases\Auth\LoginUseCase;
 use App\UseCases\Auth\LogoutUseCase;
 use App\UseCases\Auth\RegisterUseCase;
@@ -47,6 +49,13 @@ class AuthController extends Controller
     public function logoutAll(Request $request, LogoutUseCase $useCase): Response
     {
         $useCase->executeAll($request->user());
+
+        return response()->noContent();
+    }
+
+    public function destroy(DeleteAccountRequest $request, DeleteAccountUseCase $useCase): Response
+    {
+        $useCase->execute($request->user());
 
         return response()->noContent();
     }

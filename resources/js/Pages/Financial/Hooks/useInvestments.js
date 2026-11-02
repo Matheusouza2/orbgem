@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from '@inertiajs/react';
+import { useConfirm } from '@/Components/ConfirmDialog';
 import Investment from '@/Models/Investment';
 import FinancialService from '@/Services/FinancialService';
 
@@ -7,6 +8,7 @@ const normalizeErrors = (error) => error?.errors ?? { general: error?.message ??
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function useInvestments() {
+    const confirm = useConfirm();
     const [wallets, setWallets] = useState([]);
     const [investments, setInvestments] = useState([]);
     const [income, setIncome] = useState([]);
@@ -148,7 +150,7 @@ export default function useInvestments() {
     };
 
     const removeIncome = async (income) => {
-        if (!window.confirm('Apagar este rendimento recebido?')) return;
+        if (!await confirm({ title: 'Excluir rendimento?', message: 'Este rendimento recebido será excluído do investimento.', confirmLabel: 'Excluir rendimento' })) return;
         setIncomeErrors({});
         try {
             await FinancialService.deleteInvestmentIncome(income.id);
@@ -229,7 +231,7 @@ export default function useInvestments() {
     };
 
     const removePosition = async (position) => {
-        if (!window.confirm('Excluir esta posição?')) return;
+        if (!await confirm({ title: 'Excluir posição?', message: 'Esta posição será removida do histórico do investimento.', confirmLabel: 'Excluir posição' })) return;
         try {
             await FinancialService.deleteInvestmentPosition(position.id);
             await Promise.all([loadInvestments(selectedWalletId), loadPositions(positionInvestment.id), loadPositionHistory(selectedWalletId)]);
@@ -291,7 +293,7 @@ export default function useInvestments() {
     };
 
     const remove = async (investment) => {
-        if (!window.confirm(`Excluir o investimento “${investment.name}”?`)) return;
+        if (!await confirm({ title: 'Excluir investimento?', message: `“${investment.name}” será removido da carteira.`, confirmLabel: 'Excluir investimento' })) return;
         try { await FinancialService.deleteInvestment(investment.id); setInvestments((current) => current.filter((item) => item.id !== investment.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 

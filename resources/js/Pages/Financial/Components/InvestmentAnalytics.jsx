@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Button } from 'flowbite-react';
 import { Activity, BarChart3, CircleDollarSign, PieChart, TrendingUp } from 'lucide-react';
 
-const colors = ['#123B8F', '#F4B321', '#4F75C8', '#79A7A3', '#C98A00', '#667085'];
+const colors = ['#3b2a8f', '#e9c23a', '#4F75C8', '#79A7A3', '#9a7a00', '#6b6785'];
 const money = (value) => (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const compactMoney = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0) / 100);
 const monthKey = (value) => { const date = new Date(`${String(value).slice(0, 10)}T12:00:00`); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; };

@@ -59,6 +59,7 @@ RUN apk add --no-cache \
         oniguruma \
         libpng \
         libzip \
+        poppler-utils \
         nginx
 
 COPY --from=php-build /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/

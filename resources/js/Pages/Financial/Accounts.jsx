@@ -1,10 +1,12 @@
 import { Button } from 'flowbite-react';
-import { Landmark, Pencil, Plus } from 'lucide-react';
+import { ArrowLeftRight, Landmark, Pencil, Plus } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 import AccountIcon from './Components/AccountIcon';
 import AccountModal from './Components/AccountModal';
 import AccountTransactionsModal from './Components/AccountTransactionsModal';
+import BankReconciliationModal from './Components/BankReconciliationModal';
 import TransactionModal from './Components/TransactionModal';
+import useBankReconciliation from './Hooks/useBankReconciliation';
 import useWallets from './Hooks/useWallets';
 
 const accountTypeLabels = { CHECKING: 'Conta corrente', SAVINGS: 'Poupança', CASH: 'Dinheiro em espécie', INVESTMENT: 'Investimentos', DIGITAL_WALLET: 'Carteira digital' };
@@ -15,6 +17,25 @@ function AccountCard({ account, wallet, onEdit, onLaunch, onTransactions }) {
 
 export default function Accounts() {
     const accounts = useWallets();
+    const reconciliation = useBankReconciliation(accounts.refreshAccounts);
+    const selectableAccounts = accounts.accounts.map((account) => ({
+        ...account,
+        wallet_name: accounts.wallets.find((wallet) => wallet.id === account.wallet_id)?.name,
+    }));
 
-    return <AppLayout><header className="ledger-header"><div><p className="ledger-eyebrow">Organização financeira</p><h1 className="ledger-heading">Suas contas.</h1><p className="mt-3 max-w-xl text-base leading-7 text-orbital-text-secondary">Veja onde seu dinheiro está e mantenha cada conta ligada à carteira certa.</p></div><Button color="blue" onClick={() => accounts.openAccountModal()} disabled={accounts.wallets.length === 0}><Plus className="mr-2 h-4 w-4" aria-hidden="true" />Nova conta</Button></header>{Object.keys(accounts.errors).length > 0 && <div className="ledger-error" role="alert">{Object.values(accounts.errors).flat()[0]}</div>}{accounts.loading ? <div className="ledger-panel ledger-state" role="status">Carregando contas…</div> : accounts.accounts.length === 0 ? <div className="ledger-panel ledger-empty" role="status"><Landmark className="mx-auto h-8 w-8 text-orbital-primary" aria-hidden="true" /><p className="mt-3 font-semibold text-orbital-primary-dark">Nenhuma conta criada ainda.</p><p className="mt-1 text-sm text-orbital-text-secondary">Use o botão acima para criar uma conta.</p></div> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{accounts.accounts.map((account) => <AccountCard key={account.id} account={account} wallet={accounts.wallets.find((item) => item.id === account.wallet_id)} onEdit={accounts.openEditAccountModal} onLaunch={accounts.openTransactionModal} onTransactions={accounts.openAccountTransactions} />)}</div>}<AccountModal open={accounts.accountModalOpen} onClose={accounts.closeAccountModal} form={accounts.accountForm} wallet={accounts.selectedWalletForAccount} wallets={accounts.wallets} onWalletChange={accounts.selectWalletForAccount} onSubmit={accounts.submitAccount} submitting={accounts.accountSubmitting} errors={accounts.accountErrors} editing={accounts.editingAccount} /><TransactionModal open={accounts.transactionModalOpen} onClose={accounts.closeTransactionModal} form={accounts.transactionForm} accounts={accounts.selectedAccountForTransaction ? [accounts.selectedAccountForTransaction] : []} creditCards={[]} categories={accounts.transactionCategories} merchants={accounts.transactionMerchants} onCreateMerchant={() => {}} onSubmit={accounts.submitTransaction} onSubmitAndContinue={(event) => accounts.submitTransaction(event, { keepOpen: true })} submitting={accounts.transactionSubmitting} apiErrors={accounts.transactionErrors} editing={accounts.editingTransaction} /><AccountTransactionsModal account={accounts.selectedAccountForTransactions} transactions={accounts.accountTransactions} meta={accounts.accountTransactionsMeta} categories={accounts.transactionCategories} loading={accounts.accountTransactionsLoading} error={accounts.accountTransactionsError} filters={accounts.accountTransactionsFilters} onClose={accounts.closeAccountTransactions} onFilter={accounts.updateAccountTransactionsFilters} onPage={accounts.changeAccountTransactionsPage} onEditTransaction={accounts.requestEditTransaction} onEffectivate={accounts.effectivateTransaction} /></AppLayout>;
+    return <AppLayout>
+        <header className="ledger-header">
+            <div><p className="ledger-eyebrow">Organização financeira</p><h1 className="ledger-heading">Suas contas.</h1><p className="mt-3 max-w-xl text-base leading-7 text-orbital-text-secondary">Veja onde seu dinheiro está e mantenha cada conta ligada à carteira certa.</p></div>
+            <div className="flex flex-wrap gap-2">
+                <Button color="light" onClick={reconciliation.start} disabled={accounts.accounts.length === 0}><ArrowLeftRight className="mr-2 h-4 w-4" aria-hidden="true" />Conciliar extrato</Button>
+                <Button color="blue" onClick={() => accounts.openAccountModal()} disabled={accounts.wallets.length === 0}><Plus className="mr-2 h-4 w-4" aria-hidden="true" />Nova conta</Button>
+            </div>
+        </header>
+        {Object.keys(accounts.errors).length > 0 && <div className="ledger-error" role="alert">{Object.values(accounts.errors).flat()[0]}</div>}
+        {accounts.loading ? <div className="ledger-panel ledger-state" role="status">Carregando contas…</div> : accounts.accounts.length === 0 ? <div className="ledger-panel ledger-empty" role="status"><Landmark className="mx-auto h-8 w-8 text-orbital-primary" aria-hidden="true" /><p className="mt-3 font-semibold text-orbital-primary-dark">Nenhuma conta criada ainda.</p><p className="mt-1 text-sm text-orbital-text-secondary">Use o botão acima para criar uma conta.</p></div> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{accounts.accounts.map((account) => <AccountCard key={account.id} account={account} wallet={accounts.wallets.find((item) => item.id === account.wallet_id)} onEdit={accounts.openEditAccountModal} onLaunch={accounts.openTransactionModal} onTransactions={accounts.openAccountTransactions} />)}</div>}
+        <AccountModal open={accounts.accountModalOpen} onClose={accounts.closeAccountModal} form={accounts.accountForm} wallet={accounts.selectedWalletForAccount} wallets={accounts.wallets} onWalletChange={accounts.selectWalletForAccount} onSubmit={accounts.submitAccount} submitting={accounts.accountSubmitting} errors={accounts.accountErrors} editing={accounts.editingAccount} />
+        <TransactionModal open={accounts.transactionModalOpen} onClose={accounts.closeTransactionModal} form={accounts.transactionForm} accounts={accounts.selectedAccountForTransaction ? [accounts.selectedAccountForTransaction] : []} creditCards={[]} categories={accounts.transactionCategories} merchants={accounts.transactionMerchants} onCreateMerchant={() => {}} onSubmit={accounts.submitTransaction} onSubmitAndContinue={(event) => accounts.submitTransaction(event, { keepOpen: true })} submitting={accounts.transactionSubmitting} apiErrors={accounts.transactionErrors} editing={accounts.editingTransaction} />
+        <AccountTransactionsModal account={accounts.selectedAccountForTransactions} transactions={accounts.accountTransactions} meta={accounts.accountTransactionsMeta} categories={accounts.transactionCategories} loading={accounts.accountTransactionsLoading} error={accounts.accountTransactionsError} filters={accounts.accountTransactionsFilters} onClose={accounts.closeAccountTransactions} onFilter={accounts.updateAccountTransactionsFilters} onEditTransaction={accounts.requestEditTransaction} onEffectivate={accounts.effectivateTransaction} onDeleteTransaction={accounts.deleteAccountTransaction} onUpdateRecurringDate={accounts.updateRecurringOccurrenceDate} />
+        <BankReconciliationModal open={reconciliation.open} onClose={reconciliation.close} accounts={selectableAccounts} state={reconciliation} />
+    </AppLayout>;
 }

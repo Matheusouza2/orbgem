@@ -35,6 +35,9 @@ interface TransactionRepositoryInterface
     /** @return array{movements: LengthAwarePaginator, total_amount: int} */
     public function accountMovements(Account $account, TransactionListFilterDTO $filters): array;
 
+    /** @return Collection<int, Transaction> */
+    public function forBankReconciliation(int $accountId, string $dateFrom, string $dateTo): Collection;
+
     public function totalAmountForWallet(TransactionListFilterDTO $filters): int;
 
     public function totalsForMonth(MonthlySummaryDTO $summary): array;

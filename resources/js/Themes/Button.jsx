@@ -1,5 +1,5 @@
 const Button = {
-    "base": "relative flex items-center justify-center rounded-lg text-center font-medium focus:outline-none focus:ring-4",
+    "base": "orbital-btn relative flex items-center justify-center rounded-xl text-center font-semibold focus:outline-none focus:ring-4",
     "disabled": "pointer-events-none opacity-50",
     "fullSized": "w-full",
     "grouped": "rounded-none border-l-0 first:rounded-s-lg first:border-l last:rounded-e-lg focus:ring-2",
@@ -14,13 +14,13 @@ const Button = {
     "color": {
         "default": "bg-yellow-300 text-dark hover:bg-yellow-400 hover:text-white focus:ring-yellow-300 dark:bg-yellow-300 dark:text-black dark:hover:bg-yellow-400 dark:focus:ring-yellow-400",
         "alternative": "bg-chicago-600 text-white hover:bg-chicago-900 hover:text-white focus:ring-chicago-500 dark:bg-chicago-600 dark:text-white dark:hover:bg-chicago-900 dark:hover:text-white dark:focus:ring-gray-700",
-        "blue": "bg-blue-700 text-white hover:bg-blue-800 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
+        "blue": "bg-orbital-primary text-white shadow-[0_1px_0_rgb(255_255_255/.18)_inset,0_6px_16px_-6px_rgb(59_42_143/.55)] hover:bg-orbital-primary-dark focus:ring-orbital-accent/40",
         "cyan": "bg-cyan-700 text-white hover:bg-cyan-800 focus:ring-cyan-300 dark:bg-cyan-600 dark:hover:bg-cyan-700 dark:focus:ring-cyan-800",
         "dark": "bg-gray-800 text-white hover:bg-gray-900 focus:ring-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700",
         "gray": "bg-gray-700 text-white hover:bg-gray-800 focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800",
         "green": "bg-green-700 text-white hover:bg-green-800 focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800",
         "indigo": "bg-indigo-700 text-white hover:bg-indigo-800 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800",
-        "light": "border border-gray-300 bg-white text-gray-900 hover:bg-gray-100 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700",
+        "light": "border border-orbital-border bg-orbital-surface text-orbital-text-primary hover:border-orbital-primary/30 hover:bg-orbital-primary-light focus:ring-orbital-primary/15",
         "lime": "bg-lime-700 text-white hover:bg-lime-800 focus:ring-lime-300 dark:bg-lime-600 dark:hover:bg-lime-700 dark:focus:ring-lime-800",
         "pink": "bg-pink-700 text-white hover:bg-pink-800 focus:ring-pink-300 dark:bg-pink-600 dark:hover:bg-pink-700 dark:focus:ring-pink-800",
         "purple": "bg-purple-700 text-white hover:bg-purple-800 focus:ring-purple-300 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800",

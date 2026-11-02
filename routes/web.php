@@ -9,6 +9,10 @@ Route::get('/', function () {
     return Inertia::render('Auth/Login');
 });
 
+Route::view('/privacidade', 'legal.privacy')->name('legal.privacy');
+Route::view('/termos', 'legal.terms')->name('legal.terms');
+Route::view('/excluir-conta', 'legal.account-deletion')->name('legal.account-deletion');
+
 Route::get('/login', function () {
     return Inertia::render('Auth/Login');
 })->name('login');

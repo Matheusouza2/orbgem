@@ -2,7 +2,7 @@ const Modal = {
   "root": {
     "base": "fixed inset-x-0 top-0 z-50 h-screen overflow-y-auto overflow-x-hidden md:inset-0 md:h-full",
     "show": {
-      "on": "flex bg-gray-900/50 dark:bg-gray-900/80",
+      "on": "orbital-modal-root flex bg-orbital-surface-dark/50 backdrop-blur-[3px]",
       "off": "hidden"
     },
     "sizes": {
@@ -31,7 +31,7 @@ const Modal = {
   },
   "content": {
     "base": "relative h-full w-full p-4 md:h-auto",
-    "inner": "relative flex max-h-[90dvh] flex-col rounded-lg bg-white shadow dark:bg-gray-700"
+    "inner": "relative flex max-h-[90dvh] flex-col orbital-modal-panel rounded-2xl bg-white shadow-2xl dark:bg-gray-700"
   },
   "body": {
     "base": "flex-1 overflow-auto p-6",
@@ -42,7 +42,7 @@ const Modal = {
     "popup": "border-b-0 p-2",
     "title": "text-xl font-medium text-gray-900 dark:text-white",
     "close": {
-      "base": "ms-auto inline-flex items-center rounded-lg bg-transparent p-1.5 text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white",
+      "base": "ms-auto inline-flex items-center rounded-lg bg-transparent p-1.5 text-sm text-gray-400 hover:bg-orbital-primary-light hover:text-orbital-primary-dark dark:hover:bg-gray-600 dark:hover:text-white",
       "icon": "h-5 w-5"
     }
   },

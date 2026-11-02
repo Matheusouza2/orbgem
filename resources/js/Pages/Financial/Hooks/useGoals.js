@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useForm } from '@inertiajs/react';
+import { useConfirm } from '@/Components/ConfirmDialog';
 import FinancialGoal from '@/Models/FinancialGoal';
 import FinancialService from '@/Services/FinancialService';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível concluir a operação.' };
 
 export default function useGoals() {
+    const confirm = useConfirm();
     const [wallets, setWallets] = useState([]);
     const [goals, setGoals] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -90,7 +92,7 @@ export default function useGoals() {
     };
 
     const remove = async (goal) => {
-        if (!window.confirm(`Excluir a meta “${goal.name}”?`)) return;
+        if (!await confirm({ title: 'Excluir meta?', message: `A meta “${goal.name}” será excluída da carteira.`, confirmLabel: 'Excluir meta' })) return;
         try { await FinancialService.deleteGoal(goal.id); setGoals((current) => current.filter((item) => item.id !== goal.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 

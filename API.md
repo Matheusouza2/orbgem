@@ -93,6 +93,16 @@ Payload: `email`, `token`, `password`, `password_confirmation`. Retorna `200` qu
 
 Retorna `data: { id, name, email, ... }` do usuário autenticado.
 
+### `DELETE /user`
+
+Exclui a conta do usuário autenticado. Payload: `{ "password": "senha-atual" }`. Retorna `204` sem corpo.
+
+- `422` em `password` quando a senha atual não confere.
+- `422` em `account` quando o usuário é `OWNER` de uma carteira com outros membros; transfira a propriedade ou remova os membros antes.
+- Carteiras em que o usuário é o único membro são removidas com todos os dados, e as conexões Open Finance são desfeitas.
+- Em carteiras de terceiros, os dados pessoais são anonimizados e os lançamentos permanecem.
+- Os tokens de acesso são revogados; após o `204` o app deve limpar a sessão local.
+
 ### `POST /auth/logout` / `POST /auth/logout-all`
 
 Sem payload, retornam `204`. Use logout-all para revogar todos os dispositivos.
@@ -557,7 +567,23 @@ Atualiza os mesmos campos ou remove a consolidação.
 
 Retorna o resumo consolidado dentro de `data`.
 
-## 13. Importação CSV
+## 13. Conciliação bancária
+
+### `POST /bank-reconciliations`
+
+Recebe `account_id`, `month` (`YYYY-MM`) e arquivo multipart `file` PDF/OFX de até 20 MB. Exige papel `EDITOR` ou `OWNER` na carteira da conta. Retorna uma prévia persistida com saldos, avisos, contagens e linhas do extrato comparadas aos movimentos da conta. A correspondência automática exige data e valor assinado exatos e um único lançamento efetivado; divergências prováveis usam descrição semelhante e janela de até três dias para diferenças de data.
+
+Classificações: `MATCHED`, `DATE_DIVERGENCE`, `AMOUNT_DIVERGENCE`, `ONLY_IN_STATEMENT`, `ONLY_IN_SYSTEM`, `PROJECTED_IN_SYSTEM`, `NOT_POSTED_IN_SYSTEM`, `DUPLICATE_IN_STATEMENT` e `DUPLICATE_IN_SYSTEM`. Apenas linhas únicas `ONLY_IN_STATEMENT` são importáveis. PDFs precisam ter texto selecionável; PDF digitalizado não recebe OCR. O arquivo original e o número de conta completo não ficam armazenados.
+
+### `GET /bank-reconciliations/{reconciliation}`
+
+Retorna a prévia salva, com as mesmas regras de autorização.
+
+### `POST /bank-reconciliations/{reconciliation}/import`
+
+Recebe `entry_ids` (1–500 IDs) e `acknowledge_warnings` opcional. Importa apenas as linhas elegíveis selecionadas como lançamentos efetivados na conta da conciliação. A operação é idempotente; repetições não criam lançamentos duplicados. Conta/competência divergente do extrato exige confirmação explícita.
+
+## 14. Importação CSV
 
 ### `POST /imports`
 
@@ -567,7 +593,7 @@ Multipart com `wallet_id` e arquivo `file` CSV/TXT de até 50 MB. Retorna `202` 
 
 Consulta o lote e seu status. O app deve fazer polling moderado até estado final.
 
-## 14. Estratégia de consumo mobile
+## 15. Estratégia de consumo mobile
 
 1. Faça login e armazene o Bearer token em cofre seguro.
 2. Carregue `/user` e `/wallets`; selecione a carteira ativa.

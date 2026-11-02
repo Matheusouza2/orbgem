@@ -3,7 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, CreditCard, Landmark, MoveRight, WalletCar
 const money = (cents = 0) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(cents || 0) / 100);
 const percent = (value = 0) => `${Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 
-const categoryColor = ['#123B8F', '#F4B321', '#4F75C8', '#79A7A3', '#C98A00', '#667085'];
+const categoryColor = ['#3b2a8f', '#e9c23a', '#4F75C8', '#79A7A3', '#9a7a00', '#6b6785'];
 const statusColors = { posted: 'dashboard-status__bar--posted', upcoming: 'dashboard-status__bar--upcoming', overdue: 'dashboard-status__bar--overdue', distant: 'dashboard-status__bar--distant' };
 
 function ValueItem({ icon: Icon, label, value, tone = '' }) {

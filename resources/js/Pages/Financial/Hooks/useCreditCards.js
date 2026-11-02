@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
+import { useConfirm } from '@/Components/ConfirmDialog';
 import CreditCard from '@/Models/CreditCard';
 import Transaction from '@/Models/Transaction';
 import FinancialService from '@/Services/FinancialService';
@@ -10,6 +11,7 @@ const normalizeErrors = (error) => error?.errors ?? { general: error?.message ??
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function useCreditCards() {
+    const confirm = useConfirm();
     const [wallets, setWallets] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [cards, setCards] = useState([]);
@@ -139,8 +141,8 @@ export default function useCreditCards() {
     };
     const requestEditInstallment = (transaction) => openCardEdit(transaction);
     const requestEditPurchase = (purchase) => openCardEdit(null, purchase);
-    const requestDeleteInstallment = async (transaction) => { if (!window.confirm('Excluir somente esta parcela?')) return; try { await FinancialService.deleteCreditCardInstallment(transaction.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
-    const requestDeletePurchase = async (purchase) => { if (!window.confirm('Excluir todas as parcelas desta compra?')) return; try { await FinancialService.deleteCreditCardPurchase(purchase.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
+    const requestDeleteInstallment = async (transaction) => { if (!await confirm({ title: 'Excluir parcela?', message: 'Somente esta parcela será removida. As outras parcelas da compra permanecem.', confirmLabel: 'Excluir parcela' })) return; try { await FinancialService.deleteCreditCardInstallment(transaction.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
+    const requestDeletePurchase = async (purchase) => { if (!await confirm({ title: 'Excluir compra parcelada?', message: 'Esta compra e todas as parcelas vinculadas serão removidas.', confirmLabel: 'Excluir compra' })) return; try { await FinancialService.deleteCreditCardPurchase(purchase.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
     const requestEffectivateTransaction = async (transaction) => { try { await FinancialService.effectivateTransaction(transaction.id); await loadCardTransactions(transactionsCard, transactionsFilters); } catch (error) { setTransactionsError(error.message); } };
 
     const submitTransaction = async (event, { keepOpen = false } = {}) => {
@@ -191,9 +193,16 @@ export default function useCreditCards() {
         setTransactionsLoading(true);
         setTransactionsError('');
         try {
-            const response = await FinancialService.listCreditCardTransactions(card.id, { wallet_id: card.wallet_id, month: filters.month, status: filters.status, type: filters.type, category_id: filters.category_id, include_third_party: filters.include_third_party ? '1' : '0', sort_by: 'due_date', sort_direction: 'desc', page: filters.page, per_page: 20 }, { signal: controller.signal });
+            const params = { wallet_id: card.wallet_id, month: filters.month, status: filters.status, type: filters.type, category_id: filters.category_id, include_third_party: filters.include_third_party ? '1' : '0', sort_by: 'due_date', sort_direction: 'desc', per_page: 20 };
+            let response = await FinancialService.listCreditCardTransactions(card.id, { ...params, page: 1 }, { signal: controller.signal });
+            const transactions = [...(response.data ?? [])];
+            const lastPage = Number(response.meta?.last_page ?? 1);
+            for (let page = 2; page <= lastPage; page += 1) {
+                const nextPage = await FinancialService.listCreditCardTransactions(card.id, { ...params, page }, { signal: controller.signal });
+                transactions.push(...(nextPage.data ?? []));
+            }
             if (requestId === transactionsRequestId.current) {
-                setCardTransactions(response.data ?? []);
+                setCardTransactions(transactions);
                 setTransactionsCard((current) => current ? { ...current, current_invoice_amount: response.invoice_amount ?? 0 } : current);
                 setTransactionsMeta(response.meta ? { ...response.meta, total_amount: Number(response.total_amount ?? 0) } : null);
             }

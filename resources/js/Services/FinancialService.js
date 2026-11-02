@@ -28,7 +28,7 @@ const request = async (url, options = {}) => {
             Accept: 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
             ...(requestOptions.method && requestOptions.method !== 'GET' ? { 'X-XSRF-TOKEN': xsrfToken() } : {}),
-            ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
+            ...(requestOptions.body && !(typeof FormData !== 'undefined' && requestOptions.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
             ...headers,
         },
         ...requestOptions,
@@ -41,6 +41,8 @@ const request = async (url, options = {}) => {
         error.status = response.status;
         throw error;
     }
+
+    if (response.status === 204) return null;
 
     return response.json();
 };
@@ -113,6 +115,9 @@ const FinancialService = {
     },
     listAccountTransactions: async (accountId, params = {}, options = {}) => request(`/api/v1/transactions?${new URLSearchParams({ account_id: accountId, ...params })}`, options),
     listAccountMovements: async (accountId, params = {}, options = {}) => request(`/api/v1/accounts/${accountId}/movements?${new URLSearchParams(params)}`, options),
+    previewBankReconciliation: async (formData, options = {}) => request('/api/v1/bank-reconciliations', { method: 'POST', body: formData, ...options }),
+    getBankReconciliation: async (reconciliationId, options = {}) => request(`/api/v1/bank-reconciliations/${reconciliationId}`, options),
+    importBankReconciliation: async (reconciliationId, payload, options = {}) => request(`/api/v1/bank-reconciliations/${reconciliationId}/import`, { method: 'POST', body: JSON.stringify(payload), ...options }),
     getSummary: async (walletId, month, options = {}) => {
         const { includeThirdParty = true, ...requestOptions } = options;
         const params = new URLSearchParams({ wallet_id: walletId, month, include_third_party: includeThirdParty ? '1' : '0' });
@@ -125,6 +130,7 @@ const FinancialService = {
         ...options,
     }),
     updateTransaction: async (transactionId, payload, options = {}) => request(`/api/v1/transactions/${transactionId}`, { method: 'PUT', body: JSON.stringify(payload), ...options }),
+    updateRecurringOccurrenceDate: async (transactionId, date, options = {}) => request(`/api/v1/transactions/${transactionId}/recurring-date`, { method: 'PATCH', body: JSON.stringify({ date }), ...options }),
     effectivateTransaction: async (transactionId, options = {}) => request(`/api/v1/transactions/${transactionId}/effectivate`, { method: 'POST', ...options }),
     deleteTransaction: async (transactionId, options = {}) => request(`/api/v1/transactions/${transactionId}`, { method: 'DELETE', ...options }),
     listRecurringTransactions: async (walletId, options = {}) => (await request(`/api/v1/recurring-transactions?wallet_id=${walletId}`, options)).data,

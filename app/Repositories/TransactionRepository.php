@@ -131,6 +131,17 @@ class TransactionRepository implements TransactionRepositoryInterface
         return ['movements' => $paginator, 'total_amount' => $normalAmount + $signedSummaryAmount];
     }
 
+    public function forBankReconciliation(int $accountId, string $dateFrom, string $dateTo): Collection
+    {
+        return Transaction::query()
+            ->where('account_id', $accountId)
+            ->whereBetween('transaction_date', [$dateFrom, $dateTo])
+            ->whereIn('status', [TransactionStatus::POSTED->value, TransactionStatus::PROJECTED->value])
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+    }
+
     /** @return Collection<int, array<string, mixed>> */
     private function invoicePaymentSummaries(Account $account, TransactionListFilterDTO $filters): Collection
     {

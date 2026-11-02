@@ -16,26 +16,39 @@ import {
     Link2,
     UserRound,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useLogout from '@/Hooks/useLogout';
 
-const navigationItems = [
-    { label: 'Visão geral', href: '/dashboard-financeiro', icon: WalletCards },
-    { label: 'Carteiras', href: '/carteiras', icon: Wallet },
+const navigationGroups = [
+    { label: 'Dia a dia', items: [
+        { label: 'Visão geral', href: '/dashboard-financeiro', icon: WalletCards },
+        { label: 'Transações', href: '/transacoes', icon: ReceiptText },
+        { label: 'Recorrências', href: '/recorrencias', icon: ArrowLeftRight },
+    ] },
+    { label: 'Onde está o dinheiro', items: [
+        { label: 'Carteiras', href: '/carteiras', icon: Wallet },
+        { label: 'Contas', href: '/contas', icon: Landmark },
+        { label: 'Cartões de crédito', href: '/cartoes-de-credito', icon: CreditCard },
+        { label: 'Categorias', href: '/categorias', icon: Tags },
+    ] },
+    { label: 'Para frente', items: [
+        { label: 'Metas', href: '/metas', icon: Target },
+        { label: 'Investimentos', href: '/investimentos', icon: TrendingUp },
+        { label: 'Assistente IA', href: '/assistente', icon: Sparkles },
+        { label: 'Open Finance', href: '/open-finance', icon: Link2 },
+    ] },
+];
+
+const bottomTabs = [
+    { label: 'Início', href: '/dashboard-financeiro', icon: WalletCards },
     { label: 'Transações', href: '/transacoes', icon: ReceiptText },
     { label: 'Contas', href: '/contas', icon: Landmark },
-    { label: 'Cartões de crédito', href: '/cartoes-de-credito', icon: CreditCard },
-    { label: 'Categorias', href: '/categorias', icon: Tags },
-    { label: 'Metas', href: '/metas', icon: Target },
-    { label: 'Investimentos', href: '/investimentos', icon: TrendingUp },
-    { label: 'Assistente IA', href: '/assistente', icon: Sparkles },
-    { label: 'Open Finance', href: '/open-finance', icon: Link2 },
-    { label: 'Recorrências', href: '/recorrencias', icon: ArrowLeftRight },
+    { label: 'Cartões', href: '/cartoes-de-credito', icon: CreditCard },
 ];
 
 function OrbitMark() {
-    return <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orbital-primary-light text-orbital-primary" aria-hidden="true">
-        <img src="/images/icon.png" alt="" className="h-8 w-8 object-contain" />
+    return <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/95 shadow-sm ring-1 ring-black/5" aria-hidden="true">
+        <img src="/images/icon.png" alt="" className="h-7 w-7 object-contain" />
     </span>;
 }
 
@@ -43,45 +56,112 @@ export default function AppNavigation() {
     const { url, props } = usePage();
     const { auth } = props;
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [desktopNavigation, setDesktopNavigation] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+    const menuButtonRef = useRef(null);
+    const navigationRef = useRef(null);
     const { logout, processing } = useLogout();
     const user = auth?.user;
     const initials = (user?.name ?? 'U').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
+    useEffect(() => {
+        const media = window.matchMedia('(min-width: 1024px)');
+        const updateNavigationMode = (event) => {
+            setDesktopNavigation(event.matches);
+            if (event.matches) setMobileOpen(false);
+        };
+
+        setDesktopNavigation(media.matches);
+        media.addEventListener('change', updateNavigationMode);
+
+        return () => media.removeEventListener('change', updateNavigationMode);
+    }, []);
+
+    useEffect(() => {
+        if (!mobileOpen) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const closeOnEscape = (event) => {
+            if (event.key === 'Escape') {
+                setMobileOpen(false);
+                menuButtonRef.current?.focus();
+                return;
+            }
+
+            if (event.key === 'Tab') {
+                const focusable = [...(navigationRef.current?.querySelectorAll('a[href], button:not([disabled])') ?? [])];
+                const first = focusable[0];
+                const last = focusable.at(-1);
+
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last?.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first?.focus();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', closeOnEscape);
+        window.requestAnimationFrame(() => navigationRef.current?.querySelector('nav a')?.focus());
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', closeOnEscape);
+        };
+    }, [mobileOpen]);
+
+    const currentPath = url.split('?')[0];
+
     return <>
-        <div className="flex items-center justify-between border-b border-orbital-border bg-orbital-surface px-5 py-4 lg:hidden">
-            <Link href="/dashboard-financeiro" className="flex items-center gap-3" aria-label="Ir para o dashboard financeiro">
+        <div className="orbital-topbar relative z-40 flex items-center justify-between border-b border-orbital-border bg-orbital-surface/90 px-4 py-2.5 backdrop-blur lg:hidden">
+            <Link href="/dashboard-financeiro" className="flex items-center gap-2.5" aria-label="Ir para o dashboard financeiro">
                 <OrbitMark />
-                <span className="text-sm font-bold tracking-[.2em] text-orbital-primary-dark">ORBGEM</span>
+                <span className="orbital-wordmark text-base font-bold text-orbital-primary-dark">OrbGem</span>
             </Link>
-            <button type="button" className="rounded-lg p-2 text-orbital-primary-dark transition hover:bg-orbital-primary-light focus-visible:ring-2 focus-visible:ring-orbital-accent" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="app-navigation">
+            <button ref={menuButtonRef} type="button" className="orbital-btn flex h-11 w-11 items-center justify-center rounded-xl text-orbital-primary-dark hover:bg-orbital-primary-light" onClick={() => setMobileOpen((open) => !open)} aria-label={mobileOpen ? 'Fechar navegação' : 'Abrir navegação'} aria-expanded={mobileOpen} aria-controls="app-navigation">
                 {mobileOpen ? <PanelLeftClose className="h-5 w-5" aria-hidden="true" /> : <PanelLeftOpen className="h-5 w-5" aria-hidden="true" />}
-                <span className="sr-only">{mobileOpen ? 'Fechar navegação' : 'Abrir navegação'}</span>
             </button>
         </div>
 
-        <aside id="app-navigation" className={`${mobileOpen ? 'block' : 'hidden'} border-b border-orbital-border bg-orbital-primary-dark px-4 py-5 lg:sticky lg:top-0 lg:block lg:min-h-screen lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r lg:border-white/10 lg:px-5 lg:py-7`}>
-            <div className="mb-10 hidden items-center gap-3 lg:flex">
+        {mobileOpen && <button type="button" tabIndex={-1} className="orbital-scrim fixed inset-0 z-40 cursor-default bg-orbital-surface-dark/50 backdrop-blur-[3px] lg:hidden" aria-label="Fechar navegação" onClick={() => { setMobileOpen(false); menuButtonRef.current?.focus(); }} />}
+
+        <aside ref={navigationRef} id="app-navigation" aria-label="Navegação da OrbGem" aria-hidden={!desktopNavigation && !mobileOpen} aria-modal={!desktopNavigation && mobileOpen ? true : undefined} role={!desktopNavigation && mobileOpen ? 'dialog' : undefined} inert={!desktopNavigation && !mobileOpen} className={`orbital-sidebar orbital-mobile-navigation fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] flex-col overflow-y-auto px-3 py-5 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-64 lg:shrink-0 lg:translate-x-0 lg:px-4 lg:py-6 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <Link href="/dashboard-financeiro" className="mb-7 flex items-center gap-3 rounded-xl px-2 py-1" aria-label="OrbGem, ir para a visão geral">
                 <OrbitMark />
-                <div><p className="text-sm font-bold tracking-[.2em] text-white">ORBGEM</p><p className="mt-1 text-[10px] uppercase tracking-[.18em] text-orbital-primary-light/60">Finanças claras</p></div>
-            </div>
-            <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-orbital-primary-light/50">Seu espaço</p>
-            <nav aria-label="Navegação principal" className="grid gap-1">
-                {navigationItems.map(({ label, href, icon: Icon, comingSoon }) => {
-                    const active = url.split('?')[0] === href;
+                <span className="orbital-wordmark text-lg font-bold text-white">OrbGem</span>
+            </Link>
+            <nav aria-label="Navegação principal" className="grid flex-1 content-start gap-5">
+                {navigationGroups.map((group) => <div key={group.label} className="grid gap-0.5">
+                    <p className="orbital-nav-group px-3 pb-1.5 text-xs font-semibold text-white/45">{group.label}</p>
+                    {group.items.map(({ label, href, icon: Icon }) => {
+                        const active = currentPath === href;
 
-                    if (comingSoon) {
-                        return <span key={href} className="flex cursor-not-allowed items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-white/40" aria-disabled="true" title="Disponível em breve">
-                            <span className="flex items-center gap-3"><Icon className="h-[18px] w-[18px]" aria-hidden="true" />{label}</span>
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-orbital-accent/70">Em breve</span>
-                        </span>;
-                    }
-
-                    return <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${active ? 'bg-orbital-primary-light text-orbital-primary-dark shadow-sm' : 'text-white/75 hover:bg-white/10 hover:text-white'} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbital-accent`} aria-current={active ? 'page' : undefined} onClick={() => setMobileOpen(false)}>
-                        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />{label}
-                    </Link>;
-                })}
+                        return <Link key={href} href={href} className="orbital-nav-link" data-active={active ? 'true' : undefined} aria-current={active ? 'page' : undefined} onClick={() => setMobileOpen(false)}>
+                            <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" /><span className="truncate">{label}</span>
+                        </Link>;
+                    })}
+                </div>)}
             </nav>
-            <div className="mt-10 hidden border-t border-white/10 px-3 pt-5 lg:block"><div className="mb-4 flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-orbital-primary-light text-xs font-bold text-orbital-primary-dark" aria-hidden="true">{initials}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{user?.name ?? 'Sua conta'}</p><p className="truncate text-xs text-white/45">{user?.email ?? 'Perfil pessoal'}</p></div></div><div className="grid gap-1"><Link href="/perfil" className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbital-accent"><UserRound className="h-4 w-4" aria-hidden="true" />Meu perfil</Link><button type="button" onClick={logout} disabled={processing} className="flex items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbital-accent disabled:cursor-not-allowed disabled:opacity-50"><LogOut className="h-4 w-4" aria-hidden="true" />{processing ? 'Saindo…' : 'Sair'}</button></div></div>
+            <div className="mt-6 border-t border-white/10 pt-4">
+                <div className="mb-2 flex items-center gap-3 px-2"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orbital-accent text-xs font-bold text-orbital-primary-dark" aria-hidden="true">{initials}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{user?.name ?? 'Sua conta'}</p><p className="truncate text-xs text-white/55">{user?.email ?? 'Perfil pessoal'}</p></div></div>
+                <div className="grid gap-0.5">
+                    <Link href="/perfil" onClick={() => setMobileOpen(false)} className="orbital-nav-link" data-active={currentPath === '/perfil' ? 'true' : undefined}><UserRound className="h-[18px] w-[18px]" aria-hidden="true" />Meu perfil</Link>
+                    <button type="button" onClick={() => { setMobileOpen(false); logout(); }} disabled={processing} className="orbital-nav-link text-left disabled:cursor-not-allowed disabled:opacity-50"><LogOut className="h-[18px] w-[18px]" aria-hidden="true" />{processing ? 'Saindo…' : 'Sair'}</button>
+                </div>
+            </div>
         </aside>
+
+        <nav aria-label="Atalhos" className="orbital-tabbar fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 lg:hidden">
+            {bottomTabs.map(({ label, href, icon: Icon }) => {
+                const active = currentPath === href;
+
+                return <Link key={href} href={href} className="orbital-tab" data-active={active ? 'true' : undefined} aria-current={active ? 'page' : undefined}>
+                    <Icon className="h-5 w-5" aria-hidden="true" /><span>{label}</span>
+                </Link>;
+            })}
+            <button type="button" className="orbital-tab" onClick={() => setMobileOpen(true)} aria-expanded={mobileOpen} aria-controls="app-navigation"><PanelLeftOpen className="h-5 w-5" aria-hidden="true" /><span>Mais</span></button>
+        </nav>
     </>;
 }

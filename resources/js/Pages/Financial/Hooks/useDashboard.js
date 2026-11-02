@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
+import { useConfirm } from '@/Components/ConfirmDialog';
 import AccountTransfer from '@/Models/AccountTransfer';
 import Merchant from '@/Models/Merchant';
 import Transaction from '@/Models/Transaction';
@@ -27,6 +28,7 @@ const shiftMonth = (month, offset) => {
 const toCents = (value) => Math.round(Number(value) * 100);
 
 export default function useDashboard() {
+    const confirm = useConfirm();
     const [wallets, setWallets] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [creditCards, setCreditCards] = useState([]);
@@ -299,7 +301,7 @@ export default function useDashboard() {
     };
 
     const requestDelete = async (transaction) => {
-        if (!window.confirm(`Excluir o lançamento “${transaction.description}”?`)) return;
+        if (!await confirm({ title: 'Excluir lançamento?', message: `“${transaction.description}” será excluído da carteira.`, confirmLabel: 'Excluir lançamento' })) return;
 
         await runAction('transaction-delete', () => FinancialService.deleteTransaction(transaction.id), reload);
     };

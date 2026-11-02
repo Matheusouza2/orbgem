@@ -68,6 +68,12 @@ class TransactionService
         return $this->transactionRepository->accountMovements($account, $filters);
     }
 
+    /** @return Collection<int, Transaction> */
+    public function forBankReconciliation(int $accountId, string $dateFrom, string $dateTo): Collection
+    {
+        return $this->transactionRepository->forBankReconciliation($accountId, $dateFrom, $dateTo);
+    }
+
     public function totalAmountForWallet(TransactionListFilterDTO $filters): int
     {
         return $this->transactionRepository->totalAmountForWallet($filters);

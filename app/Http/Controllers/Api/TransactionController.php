@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Transaction\CreateTransactionRequest;
 use App\Http\Requests\Transaction\ListTransactionRequest;
 use App\Http\Requests\Transaction\UpdateTransactionRequest;
+use App\Http\Requests\Transaction\UpdateRecurringOccurrenceDateRequest;
 use App\Http\Resources\TransactionDetailResource;
 use App\Http\Resources\TransactionResource;
 use App\Models\User;
@@ -17,6 +18,7 @@ use App\UseCases\Transaction\EffectivateTransactionUseCase;
 use App\UseCases\Transaction\ListTransactionUseCase;
 use App\UseCases\Transaction\ShowTransactionUseCase;
 use App\UseCases\Transaction\UpdateTransactionUseCase;
+use App\UseCases\Transaction\UpdateRecurringOccurrenceDateUseCase;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -54,6 +56,14 @@ class TransactionController extends Controller
         $user = $request->user();
 
         return new TransactionResource($useCase->execute($transaction, $request->validated(), $user));
+    }
+
+    public function updateRecurringOccurrenceDate(UpdateRecurringOccurrenceDateRequest $request, int $transaction, UpdateRecurringOccurrenceDateUseCase $useCase): TransactionResource
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return new TransactionResource($useCase->execute($transaction, $request->validated('date'), $user));
     }
 
     public function effectivate(int $transaction, EffectivateTransactionUseCase $useCase): TransactionResource

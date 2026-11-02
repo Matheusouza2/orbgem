@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useConfirm } from '@/Components/ConfirmDialog';
 import FinancialService from '@/Services/FinancialService';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível concluir a operação.' };
 
 export default function useOpenFinance() {
+    const confirm = useConfirm();
     const [wallets, setWallets] = useState([]);
     const [items, setItems] = useState([]);
     const [selectedWalletId, setSelectedWalletId] = useState('');
@@ -58,7 +60,7 @@ export default function useOpenFinance() {
     };
 
     const disconnect = async (item) => {
-        if (!window.confirm(`Desconectar ${item.connector_name || 'esta instituição'}?`)) return;
+        if (!await confirm({ title: 'Desconectar instituição?', message: `A conexão com ${item.connector_name || 'esta instituição'} será encerrada e novas atualizações deixarão de ser sincronizadas.`, confirmLabel: 'Desconectar', tone: 'warning' })) return;
         try { await FinancialService.deleteOpenFinanceItem(item.id); setItems((current) => current.filter((entry) => entry.id !== item.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 

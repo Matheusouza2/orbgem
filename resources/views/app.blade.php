@@ -31,7 +31,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon/favicon-16x16.png') }}">
     <meta name="msapplication-TileImage" content="{{ asset('images/favicon/android-chrome-192x192.png') }}">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#f6f5fb">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400..700&display=swap" rel="stylesheet">
 
     @viteReactRefresh
     @vite('resources/js/app.js')

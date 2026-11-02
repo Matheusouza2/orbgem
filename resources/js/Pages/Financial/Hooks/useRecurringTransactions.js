@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useForm } from '@inertiajs/react';
+import { useConfirm } from '@/Components/ConfirmDialog';
 import RecurringTransaction from '@/Models/RecurringTransaction';
 import FinancialService from '@/Services/FinancialService';
 
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível concluir a operação.' };
 
 export default function useRecurringTransactions() {
+    const confirm = useConfirm();
     const [wallets, setWallets] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -76,7 +78,7 @@ export default function useRecurringTransactions() {
     };
 
     const remove = async (recurrence) => {
-        if (!window.confirm(`Excluir a recorrência “${recurrence.description}”?`)) return;
+        if (!await confirm({ title: 'Excluir recorrência?', message: `A regra “${recurrence.description}” será removida e não poderá mais gerar lançamentos.`, confirmLabel: 'Excluir recorrência' })) return;
         try { await FinancialService.deleteRecurringTransaction(recurrence.id); setRecurrences((current) => current.filter((item) => item.id !== recurrence.id)); } catch (error) { setErrors(normalizeErrors(error)); }
     };
 

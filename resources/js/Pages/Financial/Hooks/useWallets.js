@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
+import { useConfirm } from '@/Components/ConfirmDialog';
 import Account from '@/Models/Account';
 import Transaction from '@/Models/Transaction';
 import Wallet from '@/Models/Wallet';
@@ -10,6 +11,7 @@ import { buildTransactionUpdatePayload } from './transactionUpdatePayload';
 const normalizeErrors = (error) => error?.errors ?? { general: error?.message ?? 'Não foi possível criar a carteira.' };
 
 export default function useWallets() {
+    const confirm = useConfirm();
     const [wallets, setWallets] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -209,6 +211,28 @@ export default function useWallets() {
         }
     };
 
+    const deleteAccountTransaction = async (transaction) => {
+        if (!await confirm({ title: 'Excluir movimento?', message: `“${transaction.description}” será excluído da carteira.`, confirmLabel: 'Excluir movimento' })) return;
+        setAccountTransactionsError('');
+        try {
+            await FinancialService.deleteTransaction(transaction.id);
+            await loadAccountTransactions(selectedAccountForTransactions, accountTransactionsFilters);
+        } catch (error) {
+            setAccountTransactionsError(error.message);
+        }
+    };
+
+    const updateRecurringOccurrenceDate = async (transaction, date) => {
+        setAccountTransactionsError('');
+        try {
+            await FinancialService.updateRecurringOccurrenceDate(transaction.id, date);
+            await loadAccountTransactions(selectedAccountForTransactions, accountTransactionsFilters);
+        } catch (error) {
+            setAccountTransactionsError(error.message);
+            throw error;
+        }
+    };
+
     const submitTransaction = async (event, { keepOpen = false } = {}) => {
         event.preventDefault();
         setTransactionErrors({});
@@ -253,20 +277,26 @@ export default function useWallets() {
         setAccountTransactionsError('');
 
         try {
-            const response = await FinancialService.listAccountMovements(account.id, {
+            const params = {
                 wallet_id: account.wallet_id,
                 month: filters.month,
                 status: filters.status,
                 type: filters.type,
                 category_id: filters.category_id,
                 include_third_party: filters.include_third_party ? '1' : '0',
-                page: filters.page,
                 per_page: 20,
                 sort_by: 'due_date',
                 sort_direction: 'desc',
-            }, { signal: controller.signal });
+            };
+            let response = await FinancialService.listAccountMovements(account.id, { ...params, page: 1 }, { signal: controller.signal });
+            const movements = [...(response.data ?? [])];
+            const lastPage = Number(response.meta?.last_page ?? 1);
+            for (let page = 2; page <= lastPage; page += 1) {
+                const nextPage = await FinancialService.listAccountMovements(account.id, { ...params, page }, { signal: controller.signal });
+                movements.push(...(nextPage.data ?? []));
+            }
             if (requestId === accountTransactionsRequestId.current) {
-                setAccountTransactions((response.data ?? []).map((transaction) => ({ ...transaction, canManage: canManageTransaction(transaction) })));
+                setAccountTransactions(movements.map((transaction) => ({ ...transaction, canManage: canManageTransaction(transaction) })));
                 setAccountTransactionsMeta({ ...(response.meta ?? {}), total_amount: Number(response.total_amount ?? 0) });
             }
         } catch (error) {
@@ -274,6 +304,12 @@ export default function useWallets() {
         } finally {
             if (requestId === accountTransactionsRequestId.current) setAccountTransactionsLoading(false);
         }
+    };
+
+    const refreshAccounts = async () => {
+        if (wallets.length === 0) return;
+        const walletAccounts = await Promise.all(wallets.map((wallet) => FinancialService.listAccounts(wallet.id)));
+        setAccounts(walletAccounts.flat());
     };
 
     const openAccountTransactions = (account) => {
@@ -299,5 +335,5 @@ export default function useWallets() {
         loadAccountTransactions(selectedAccountForTransactions, filters);
     };
 
-    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedAccountForTransaction, editingTransaction, requestEditTransaction, effectivateTransaction, accountTransactions, accountTransactionsMeta, accountTransactionsLoading, accountTransactionsError, accountTransactionsFilters, selectedAccountForTransactions, openAccountTransactions, closeAccountTransactions, updateAccountTransactionsFilters, changeAccountTransactionsPage };
+    return { wallets, accounts, loading, modalOpen, editingWallet, errors, submitting, form, openModal, closeModal, submit, accountModalOpen, selectedWalletForAccount, editingAccount, accountErrors, accountSubmitting, accountForm, openAccountModal, openEditAccountModal, selectWalletForAccount, closeAccountModal, submitAccount, transactionModalOpen, transactionCategories, transactionMerchants, transactionErrors, transactionSubmitting, transactionForm, openTransactionModal, closeTransactionModal, submitTransaction, selectedAccountForTransaction, editingTransaction, requestEditTransaction, effectivateTransaction, deleteAccountTransaction, updateRecurringOccurrenceDate, accountTransactions, accountTransactionsMeta, accountTransactionsLoading, accountTransactionsError, accountTransactionsFilters, selectedAccountForTransactions, openAccountTransactions, closeAccountTransactions, updateAccountTransactionsFilters, changeAccountTransactionsPage, refreshAccounts };
 }
