@@ -4,6 +4,7 @@ export const emptySummary = {
     forecast_expenses: 0,
     actual_income: 0,
     forecast_income: 0,
+    actual_transfers: 0,
 };
 
 export const normalizeErrors = (requestError) => {

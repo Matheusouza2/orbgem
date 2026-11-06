@@ -273,7 +273,7 @@ As contas devem ser diferentes e pertencer à carteira. Retorna a transferência
 
 ### `GET /monthly-summary`
 
-Parâmetros `wallet_id`, `month` e opcional `include_third_party=0|1`. Retorna resumo mensal com balanço, receitas, despesas, transferências, economia e dados de planejamento. Contas marcadas `ignore_in_totals` e, quando solicitado, despesas de terceiros ficam fora dos totais.
+Parâmetros `wallet_id`, `month` e opcional `include_third_party=0|1`. Retorna resumo mensal com balanço acumulado até o mês selecionado, receitas, despesas, transferências efetivadas (`actual_transfers`), economia e dados de planejamento. Os movimentos do período são agrupados por vencimento. Contas marcadas `ignore_in_totals` e, quando solicitado, despesas de terceiros ficam fora dos totais.
 
 ### `GET /planning-summary`
 

@@ -439,6 +439,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             'forecast_expenses' => $rows->where('type', TransactionType::EXPENSE)->sum('amount'),
             'actual_income' => $rows->where('type', TransactionType::INCOME)->where('status', TransactionStatus::POSTED)->sum('amount'),
             'forecast_income' => $rows->where('type', TransactionType::INCOME)->sum('amount'),
+            'actual_transfers' => $rows->where('type', TransactionType::TRANSFER)->where('effect', TransactionEffect::DEBIT)->where('status', TransactionStatus::POSTED)->sum('amount'),
             'expense_by_category' => $this->expensesByCategory($rows),
             'income_status_breakdown' => $this->statusBreakdown($rows, TransactionType::INCOME),
             'expense_status_breakdown' => $this->statusBreakdown($rows, TransactionType::EXPENSE),

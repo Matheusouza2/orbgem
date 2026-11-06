@@ -47,7 +47,7 @@ class ListAccountUseCase
         return $accounts->map(function ($account) use ($month, $includeThirdParty) {
             $account->setAttribute('dashboard_balance', $this->balanceCalculator->calculate(
                 $account->initial_balance,
-                $this->transactionService->postedAmountsForAccount($account->id, $includeThirdParty),
+                $this->transactionService->postedAmountsForAccountThroughMonth($account->id, $month, $includeThirdParty),
             ));
 
             return $account;
