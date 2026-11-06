@@ -167,7 +167,13 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->where('status', TransactionStatus::POSTED)
             ->when($filters->month !== null, function (Builder $query) use ($filters): void {
                 [$start, $end] = $this->monthBounds($filters->month);
-                $query->where('transaction_date', '>=', $start)->where('transaction_date', '<', $end);
+                $query->where(function (Builder $query) use ($start, $end): void {
+                    $query->where(function (Builder $query) use ($start, $end): void {
+                        $query->whereNotNull('due_date')->where('due_date', '>=', $start)->where('due_date', '<', $end);
+                    })->orWhere(function (Builder $query) use ($start, $end): void {
+                        $query->whereNull('due_date')->where('transaction_date', '>=', $start)->where('transaction_date', '<', $end);
+                    });
+                });
             })
             ->when($filters->status !== null, fn (Builder $query) => $query->where('status', $filters->status))
             ->when($filters->status === null && $filters->activeStatusesOnly, fn (Builder $query) => $query->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED]))
@@ -178,7 +184,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->get();
 
         return $payments
-            ->groupBy(fn (Transaction $payment): string => $payment->credit_card_invoice_id.'|'.$payment->competence_date->format('Y-m'))
+            ->groupBy(fn (Transaction $payment): string => $payment->credit_card_invoice_id.'|'.($payment->due_date?->format('Y-m') ?? $payment->transaction_date?->format('Y-m')))
             ->map(function (Collection $rows) use ($filters): ?array {
                 /** @var Transaction $first */
                 $first = $rows->first();
@@ -194,7 +200,7 @@ class TransactionRepository implements TransactionRepositoryInterface
                 }
 
                 return $this->invoiceSummaryRow(
-                    id: 'invoice-payment-'.$invoice->id.'-'.$first->competence_date->format('Y-m'),
+                    id: 'invoice-payment-'.$invoice->id.'-'.($first->due_date?->format('Y-m') ?? $first->transaction_date?->format('Y-m')),
                     invoice: $invoice,
                     accountId: (int) $first->account_id,
                     amount: $amount,
@@ -342,7 +348,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->value('total_amount');
     }
 
-    private function queryForWallet(TransactionListFilterDTO $filters, bool $withDetails = true, bool $monthByDueDate = false): Builder
+    private function queryForWallet(TransactionListFilterDTO $filters, bool $withDetails = true, bool $monthByDueDate = true): Builder
     {
         $query = Transaction::query()
             ->when($withDetails, fn (Builder $query): Builder => $query->withExists('reversals')->with(['externalTransactions:id,transaction_id,source']))
@@ -420,7 +426,13 @@ class TransactionRepository implements TransactionRepositoryInterface
     public function totalsForMonth(MonthlySummaryDTO $summary): array
     {
         [$start, $end] = $this->monthBounds($summary->month);
-        $rows = Transaction::query()->with('category')->includedInTotals()->when(! $summary->includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $summary->walletId)->where('competence_date', '>=', $start)->where('competence_date', '<', $end)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
+        $rows = Transaction::query()->with('category')->includedInTotals()->when(! $summary->includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $summary->walletId)->where(function (Builder $query) use ($start, $end): void {
+            $query->where(function (Builder $query) use ($start, $end): void {
+                $query->whereNotNull('due_date')->where('due_date', '>=', $start)->where('due_date', '<', $end);
+            })->orWhere(function (Builder $query) use ($start, $end): void {
+                $query->whereNull('due_date')->where('transaction_date', '>=', $start)->where('transaction_date', '<', $end);
+            });
+        })->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->get();
 
         return [
             'actual_expenses' => $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::POSTED)->sum('amount'),
@@ -516,7 +528,11 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->where('account_id', $accountId)
             ->where('status', TransactionStatus::POSTED)
-            ->where('competence_date', '<', $end)
+            ->where(function (Builder $query) use ($end): void {
+                $query->where('due_date', '<', $end)->orWhere(function (Builder $query) use ($end): void {
+                    $query->whereNull('due_date')->where('transaction_date', '<', $end);
+                });
+            })
             ->get(['effect', 'amount']);
     }
 

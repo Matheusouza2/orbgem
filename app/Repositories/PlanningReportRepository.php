@@ -20,16 +20,26 @@ class PlanningReportRepository implements PlanningReportRepositoryInterface
             ->includedInTotals()
             ->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))
             ->where('wallet_id', $walletId)
-            ->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])
+            ->where(function ($query) use ($start, $end): void {
+                $query->whereBetween('due_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])
+                    ->orWhere(function ($query) use ($start, $end): void {
+                        $query->whereNull('due_date')->whereBetween('transaction_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()]);
+                    });
+            })
             ->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])
             ->get(['amount', 'status', 'type']);
-        $futureRows = Installment::query()->whereHas('purchase', fn ($query) => $query->where('wallet_id', $walletId))->where('competence_date', '>=', $end)->where('status', '!=', 'CANCELLED')->get(['amount', 'competence_date']);
+        $futureRows = Installment::query()->whereHas('purchase', fn ($query) => $query->where('wallet_id', $walletId))->where('due_date', '>=', $end)->where('status', '!=', 'CANCELLED')->get(['amount', 'due_date']);
         $futureInstallments = $futureRows->sum('amount');
-        $futureByMonth = $futureRows->groupBy(fn ($row): string => $row->competence_date->format('Y-m'))->map(fn ($rows): int => (int) $rows->sum('amount'))->all();
+        $futureByMonth = $futureRows->groupBy(fn ($row): string => $row->due_date->format('Y-m'))->map(fn ($rows): int => (int) $rows->sum('amount'))->all();
         $commitments = FinancialCommitment::query()->where('wallet_id', $walletId)->where('active', true)->whereDate('end_date', '>=', $start)->sum('installment_amount');
         $budgetRows = Budget::query()->where('wallet_id', $walletId)->where('reference_month', $month)->where('active', true)->get();
         $budgetTotal = (int) $budgetRows->sum('amount');
-        $budgetConsumed = (int) Transaction::query()->includedInTotals()->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $walletId)->where('type', TransactionType::EXPENSE)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->whereBetween('competence_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])->whereIn('category_id', $budgetRows->pluck('category_id'))->sum('amount');
+        $budgetConsumed = (int) Transaction::query()->includedInTotals()->when(! $includeThirdParty, fn ($query) => $query->where('is_third_party', false))->where('wallet_id', $walletId)->where('type', TransactionType::EXPENSE)->whereIn('status', [TransactionStatus::POSTED, TransactionStatus::PROJECTED])->where(function ($query) use ($start, $end): void {
+            $query->whereBetween('due_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()])
+                ->orWhere(function ($query) use ($start, $end): void {
+                    $query->whereNull('due_date')->whereBetween('transaction_date', [$start->toDateString(), $end->copy()->subDay()->toDateString()]);
+                });
+        })->whereIn('category_id', $budgetRows->pluck('category_id'))->sum('amount');
 
         $realizedExpenses = (int) $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::POSTED)->sum('amount');
         $projectedExpenses = (int) $rows->where('type', TransactionType::EXPENSE)->where('status', TransactionStatus::PROJECTED)->sum('amount');

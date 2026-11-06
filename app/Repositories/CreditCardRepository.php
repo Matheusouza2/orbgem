@@ -114,7 +114,13 @@ class CreditCardRepository implements CreditCardRepositoryInterface
 
         if ($dto->month !== null) {
             $start = Carbon::createFromFormat('!Y-m', $dto->month)->startOfMonth();
-            $query->whereBetween('competence_date', [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()]);
+            $end = $start->copy()->endOfMonth()->toDateString();
+            $query->where(function (Builder $query) use ($start, $end): void {
+                $query->whereBetween('due_date', [$start->toDateString(), $end])
+                    ->orWhere(function (Builder $query) use ($start, $end): void {
+                        $query->whereNull('due_date')->whereBetween('transaction_date', [$start->toDateString(), $end]);
+                    });
+            });
         }
 
         return $query;
