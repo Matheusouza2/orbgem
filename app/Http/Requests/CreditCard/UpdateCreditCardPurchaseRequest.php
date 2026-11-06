@@ -13,6 +13,6 @@ class UpdateCreditCardPurchaseRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['description' => ['required', 'string', 'max:255'], 'purchase_date' => ['required', 'date'], 'total_amount' => ['required', 'integer', 'min:1'], 'category_id' => ['nullable', 'integer', 'exists:categories,id'], 'merchant_id' => ['nullable', 'integer', 'exists:merchants,id'], 'is_third_party' => ['sometimes', 'boolean']];
+        return ['description' => ['required', 'string', 'max:255'], 'purchase_date' => ['required', 'date'], 'due_date' => ['sometimes', 'nullable', 'date'], 'total_amount' => ['required', 'integer', 'min:1'], 'category_id' => ['nullable', 'integer', 'exists:categories,id'], 'merchant_id' => ['nullable', 'integer', 'exists:merchants,id'], 'is_third_party' => ['sometimes', 'boolean']];
     }
 }

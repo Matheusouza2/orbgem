@@ -136,7 +136,7 @@ export default function useCreditCards() {
         setEditingCardTransaction(purchase ? null : transaction);
         setEditingCardPurchase(purchase ?? null);
         setSelectedCardForTransaction(transactionsCard);
-        transactionForm.setData({ ...Transaction, wallet_id: transactionsCard.wallet_id, credit_card_id: transactionsCard.id, financial_instrument_type: 'CREDIT_CARD', type: 'EXPENSE', effect: 'DEBIT', status: transaction?.status ?? 'PROJECTED', description: purchase ? source.description : source.description.replace(/\s\(\d+\/\d+\)$/, ''), amount: Number(purchase ? source.total_amount : source.amount) / 100, transaction_date: purchase ? source.purchase_date : source.transaction_date, category_id: source.category_id ?? '', merchant_id: source.merchant_id ?? '', is_third_party: Boolean(transaction?.is_third_party) });
+        transactionForm.setData({ ...Transaction, wallet_id: transactionsCard.wallet_id, credit_card_id: transactionsCard.id, financial_instrument_type: 'CREDIT_CARD', type: 'EXPENSE', effect: 'DEBIT', status: transaction?.status ?? 'PROJECTED', description: purchase ? source.description : source.description.replace(/\s\(\d+\/\d+\)$/, ''), amount: Number(purchase ? source.total_amount : source.amount) / 100, transaction_date: purchase ? source.purchase_date : source.transaction_date, due_date: purchase ? source.due_date ?? '' : transaction?.due_date ?? '', category_id: source.category_id ?? '', merchant_id: source.merchant_id ?? '', is_third_party: Boolean(transaction?.is_third_party) });
         setTransactionModalOpen(true);
     };
     const requestEditInstallment = (transaction) => openCardEdit(transaction);
@@ -164,7 +164,7 @@ export default function useCreditCards() {
                 installment_count: transactionForm.data.recurrence_type === 'INSTALLMENT' ? Number(transactionForm.data.installment_count) : 1,
             };
             if (editingCardTransaction) await FinancialService.updateCreditCardInstallment(editingCardTransaction.id, buildCreditCardInstallmentUpdatePayload(transactionForm.data));
-            else if (editingCardPurchase) await FinancialService.updateCreditCardPurchase(editingCardPurchase.id, { description: payload.description, purchase_date: payload.purchase_date, total_amount: payload.total_amount, category_id: payload.category_id, merchant_id: payload.merchant_id, is_third_party: payload.is_third_party });
+            else if (editingCardPurchase) await FinancialService.updateCreditCardPurchase(editingCardPurchase.id, { description: payload.description, purchase_date: payload.purchase_date, due_date: payload.due_date, total_amount: payload.total_amount, category_id: payload.category_id, merchant_id: payload.merchant_id, is_third_party: payload.is_third_party });
             else await FinancialService.createCreditCardPurchase(payload);
             transactionForm.reset();
             transactionForm.clearErrors();

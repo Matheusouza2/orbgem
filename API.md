@@ -317,7 +317,7 @@ data de vencimento calculada para a fatura continua disponível em `invoice.due_
 
 ### `PUT /credit-card-purchases/{purchase}`
 
-Atualiza os dados editáveis da compra e retorna a compra atualizada.
+Atualiza os dados editáveis da compra, incluindo `due_date` (opcional/nulo), e retorna a compra atualizada. Essa data informada da compra é mantida separada do vencimento calculado da fatura (`invoice.due_date`).
 
 ### `DELETE /credit-card-purchases/{purchase}`
 
